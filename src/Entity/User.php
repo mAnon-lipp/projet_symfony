@@ -44,6 +44,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?\DateTimeImmutable $created_at = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $cgu_validated_at = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $verified_at = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $inactivated_at = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $deleted_at = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $deleted_by = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -163,6 +178,66 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setCreatedAt(\DateTimeImmutable $created_at): static
     {
         $this->created_at = $created_at;
+
+        return $this;
+    }
+
+    public function getCguValidatedAt(): ?\DateTimeImmutable
+    {
+        return $this->cgu_validated_at;
+    }
+
+    public function setCguValidatedAt(?\DateTimeImmutable $cgu_validated_at): static
+    {
+        $this->cgu_validated_at = $cgu_validated_at;
+
+        return $this;
+    }
+
+    public function getVerifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->verified_at;
+    }
+
+    public function setVerifiedAt(?\DateTimeImmutable $verified_at): static
+    {
+        $this->verified_at = $verified_at;
+
+        return $this;
+    }
+
+    public function getInactivatedAt(): ?\DateTimeImmutable
+    {
+        return $this->inactivated_at;
+    }
+
+    public function setInactivatedAt(?\DateTimeImmutable $inactivated_at): static
+    {
+        $this->inactivated_at = $inactivated_at;
+
+        return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deleted_at;
+    }
+
+    public function setDeletedAt(?\DateTimeImmutable $deleted_at): static
+    {
+        $this->deleted_at = $deleted_at;
+
+        return $this;
+    }
+
+    public function getDeletedBy(): ?string
+    {
+        return $this->deleted_by;
+    }
+
+    public function setDeletedBy(?string $deleted_by): static
+    {
+        $this->deleted_by = $deleted_by;
 
         return $this;
     }
