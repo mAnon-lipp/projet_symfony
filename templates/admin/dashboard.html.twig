@@ -1,0 +1,42 @@
+{% extends '@EasyAdmin/layout.html.twig' %}
+
+{% block main %}
+    <div class="content-panel">
+        <div class="content-panel-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="title">Users</h1>
+            </div>
+
+            {% if users is empty %}
+                <p>No users found.</p>
+            {% else %}
+                <table class="datagrid">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Roles</th>
+                            <th>Created at</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.roles|join(', ') }}</td>
+                                <td>{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '-' }}</td>
+                                <td>
+                                    <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController').setAction('detail').setEntityId(user.id) }}">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

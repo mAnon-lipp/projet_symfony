@@ -9,19 +9,22 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController
 {
-    #[Route(path: '/login', name: 'app_login')]
+    #[Route(path: '/admin/login', name: 'admin_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
-        // if ($this->getUser()) {
-        //     return $this->redirectToRoute('target_path');
-        // }
-
-        // get the login error if there is one
         $error = $authenticationUtils->getLastAuthenticationError();
-        // last username entered by the user
         $lastUsername = $authenticationUtils->getLastUsername();
 
-        return $this->render('security/login.html.twig', ['last_username' => $lastUsername, 'error' => $error]);
+        return $this->render('security/login.html.twig', [
+            'error' => $error,
+            'last_username' => $lastUsername,
+            'action' => $this->generateUrl('admin_login'),
+            'target_path' => $this->generateUrl('admin'),
+            'csrf_token_intention' => 'authenticate',
+            'username_parameter' => 'email',
+            'password_parameter' => 'password',
+            'remember_me_enabled' => true,
+        ]);
     }
 
     #[Route(path: '/logout', name: 'app_logout')]
