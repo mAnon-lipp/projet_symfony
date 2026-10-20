@@ -7,8 +7,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\PasswordField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserCrudController extends AbstractCrudController
@@ -28,7 +28,8 @@ class UserCrudController extends AbstractCrudController
         return [
             TextField::new('username'),
             TextField::new('email'),
-            PasswordField::new('password')
+            TextField::new('password')
+                ->setFormType(PasswordType::class)
                 ->onlyOnForms()
                 ->setRequired(false),
             ChoiceField::new('roles')
