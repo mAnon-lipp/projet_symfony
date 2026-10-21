@@ -1,42 +1,170 @@
 {% extends '@EasyAdmin/layout.html.twig' %}
 
 {% block main %}
-    <div class="content-panel">
-        <div class="content-panel-body">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="title">Users</h1>
-            </div>
+    <style>
+        .admin-dashboard { max-width: 1400px; }
+        .admin-dashboard .welcome { margin-bottom: 1.5rem; }
+        .admin-dashboard .welcome h1 { margin-bottom: .35rem; }
+        .admin-dashboard .welcome p { color: var(--text-muted); margin: 0; }
+        .admin-dashboard .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .admin-dashboard .stat-card,
+        .admin-dashboard .dashboard-section {
+            background: var(--content-bg);
+            border: 1px solid var(--border-color);
+            border-radius: .5rem;
+            box-shadow: var(--box-shadow);
+        }
+        .admin-dashboard .stat-card {
+            display: block;
+            padding: 1.15rem;
+            color: inherit;
+            text-decoration: none;
+            transition: transform .15s ease, border-color .15s ease;
+        }
+        .admin-dashboard .stat-card:hover {
+            border-color: var(--link-color);
+            transform: translateY(-2px);
+        }
+        .admin-dashboard .stat-label {
+            color: var(--text-muted);
+            font-size: .85rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .admin-dashboard .stat-value {
+            display: block;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: .35rem;
+        }
+        .admin-dashboard .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.5rem;
+        }
+        .admin-dashboard .dashboard-section { overflow: hidden; }
+        .admin-dashboard .section-header {
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+        }
+        .admin-dashboard .section-header h2 { font-size: 1.1rem; margin: 0; }
+        .admin-dashboard .section-header a { font-size: .85rem; }
+        .admin-dashboard table { margin: 0; }
+        .admin-dashboard td, .admin-dashboard th { padding: .8rem 1.25rem; }
+        .admin-dashboard .muted { color: var(--text-muted); }
+        .admin-dashboard .empty { color: var(--text-muted); padding: 1.25rem; }
+        @media (max-width: 1100px) {
+            .admin-dashboard .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (max-width: 800px) {
+            .admin-dashboard .stat-grid,
+            .admin-dashboard .dashboard-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 
-            {% if users is empty %}
-                <p>No users found.</p>
-            {% else %}
-                <table class="datagrid">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Roles</th>
-                            <th>Created at</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in users %}
+    <div class="admin-dashboard">
+        <div class="welcome">
+            <h1>Tableau de bord</h1>
+            <p>Une vue rapide de l'activité et du contenu de votre plateforme.</p>
+        </div>
+
+        <div class="stat-grid">
+            <a class="stat-card" href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController').setAction('index') }}">
+                <span class="stat-label">Utilisateurs</span>
+                <strong class="stat-value">{{ stats.users }}</strong>
+            </a>
+            <a class="stat-card" href="{{ ea_url().setController('App\\Controller\\Admin\\AlbumCrudController').setAction('index') }}">
+                <span class="stat-label">Albums</span>
+                <strong class="stat-value">{{ stats.albums }}</strong>
+            </a>
+            <a class="stat-card" href="{{ ea_url().setController('App\\Controller\\Admin\\ArtistCrudController').setAction('index') }}">
+                <span class="stat-label">Artistes</span>
+                <strong class="stat-value">{{ stats.artists }}</strong>
+            </a>
+            <a class="stat-card" href="{{ ea_url().setController('App\\Controller\\Admin\\GenreCrudController').setAction('index') }}">
+                <span class="stat-label">Genres</span>
+                <strong class="stat-value">{{ stats.genres }}</strong>
+            </a>
+            <a class="stat-card" href="{{ ea_url().setController('App\\Controller\\Admin\\ReviewCrudController').setAction('index') }}">
+                <span class="stat-label">Reviews</span>
+                <strong class="stat-value">{{ stats.reviews }}</strong>
+            </a>
+        </div>
+
+        <div class="dashboard-grid">
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>Derniers utilisateurs</h2>
+                    <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController').setAction('index') }}">Tout voir</a>
+                </div>
+                {% if recentUsers is empty %}
+                    <p class="empty">Aucun utilisateur enregistré.</p>
+                {% else %}
+                    <table class="datagrid">
+                        <thead>
                             <tr>
-                                <td>{{ user.username }}</td>
-                                <td>{{ user.email }}</td>
-                                <td>{{ user.roles|join(', ') }}</td>
-                                <td>{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '-' }}</td>
-                                <td>
-                                    <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController').setAction('detail').setEntityId(user.id) }}">
-                                        View
-                                    </a>
-                                </td>
+                                <th>Utilisateur</th>
+                                <th>Inscription</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% endif %}
+                        </thead>
+                        <tbody>
+                            {% for user in recentUsers %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController').setAction('detail').setEntityId(user.id) }}">
+                                            {{ user.username ?: user.email }}
+                                        </a>
+                                        <div class="muted">{{ user.email }}</div>
+                                    </td>
+                                    <td>{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </section>
+
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>Dernières reviews</h2>
+                    <a href="{{ ea_url().setController('App\\Controller\\Admin\\ReviewCrudController').setAction('index') }}">Modérer</a>
+                </div>
+                {% if recentReviews is empty %}
+                    <p class="empty">Aucune review enregistrée.</p>
+                {% else %}
+                    <table class="datagrid">
+                        <thead>
+                            <tr>
+                                <th>Album</th>
+                                <th>Note</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for review in recentReviews %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ ea_url().setController('App\\Controller\\Admin\\ReviewCrudController').setAction('detail').setEntityId(review.id) }}">
+                                            {{ review.albumId ?: '-' }}
+                                        </a>
+                                        <div class="muted">{{ review.userId ?: 'Utilisateur inconnu' }}</div>
+                                    </td>
+                                    <td><strong>{{ review.rating }}/5</strong></td>
+                                    <td>{{ review.createdAt ? review.createdAt|date('d/m/Y H:i') : '-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </section>
         </div>
     </div>
 {% endblock %}

@@ -1,0 +1,107 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}trackd — Discover music{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="trackd-page">
+        <header class="site-header">
+            <a class="brand" href="{{ path('app_home') }}" aria-label="trackd home">
+                <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
+                <span>trackd</span>
+            </a>
+
+            <label class="search-box">
+                <img src="{{ asset('images/home/search.svg') }}" alt="">
+                <input type="search" placeholder="Search albums, artists, labels…" aria-label="Search albums, artists, labels">
+                <kbd>⌘K</kbd>
+            </label>
+
+            <nav class="public-nav" aria-label="Public navigation">
+                <a href="#community">Explore</a>
+                <a href="#popular">Lists</a>
+            </nav>
+
+            <div class="account-actions">
+                <a class="sign-in" href="{{ path('admin_login') }}">Sign in</a>
+                <a class="sign-up" href="{{ path('admin_login') }}">Sign up</a>
+            </div>
+        </header>
+
+        <main>
+            <section class="hero" aria-labelledby="featured-title">
+                <div class="hero-image"></div>
+                <div class="hero-overlay"></div>
+                <div class="hero-content">
+                    <img class="featured-cover" src="{{ asset('images/home/hero-cover.jpg') }}" alt="In Rainbows album cover">
+                    <div class="featured-details">
+                        <p class="eyebrow">ALBUM OF THE WEEK <span>·</span> <em>Art Rock · Alternative</em></p>
+                        <h1 id="featured-title">In Rainbows</h1>
+                        <p class="album-meta"><em>Radiohead, 2007</em></p>
+                        <div class="rating" aria-label="4.7 out of 5 stars">
+                            <span>★★★★★</span> <strong>4.7</strong> <small>community avg</small>
+                        </div>
+                        <p class="hero-copy">A masterpiece of restraint and intimacy. Thom Yorke at his most nakedly human, wrapped in the band's most cohesive, warmly produced record. A decade on, it still sounds like nothing else.</p>
+                        <div class="hero-actions">
+                            <a class="primary-button" href="{{ path('admin_login') }}">Sign in to log</a>
+                            <a class="secondary-button" href="#community">Read reviews</a>
+                        </div>
+                        <p class="helper-copy">New to trackd? <a href="{{ path('admin_login') }}">Sign up</a> to rate and review.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="content-section community-section" id="community">
+                <div class="section-heading">
+                    <div>
+                        <h2>Recent Community Lists</h2>
+                        <p>What people are playing right now</p>
+                    </div>
+                    <div class="section-controls" aria-hidden="true"><button>←</button><button>→</button><span>See all →</span></div>
+                </div>
+                <div class="community-grid">
+                    {% for list in community_lists %}
+                        <article class="community-card">
+                            <img class="community-cover" src="{{ asset('images/home/' ~ list.cover) }}" alt="">
+                            <div class="community-card-body">
+                                <h3>{{ list.title }}</h3>
+                                <p class="muted">{{ list.artist }}</p>
+                                <div class="reviewer"><img src="{{ asset('images/home/' ~ list.avatar) }}" alt=""><span>{{ list.user }}</span><time>{{ list.time }}</time></div>
+                                <div class="mini-rating" aria-label="{{ list.rating }} out of 5 stars">{{ '★'|repeat(list.rating) }}<span>{{ '☆'|repeat(5 - list.rating) }}</span></div>
+                                <p class="description">“{{ list.description }}”</p>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="content-section popular-section" id="popular">
+                <div class="section-heading">
+                    <div>
+                        <h2>Popular This Month</h2>
+                        <p>Most logged albums among our members</p>
+                    </div>
+                    <a class="see-all" href="{{ path('admin_login') }}">Full chart →</a>
+                </div>
+                <div class="popular-grid">
+                    {% for album in popular_albums %}
+                        <article class="popular-card">
+                            <div class="rank">{{ loop.index }}</div>
+                            <img src="{{ asset('images/home/' ~ album.cover) }}" alt="{{ album.title }}">
+                            <h3>{{ album.title }}</h3>
+                            <p>{{ album.artist }}</p>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <span class="footer-brand"><img src="{{ asset('images/home/record-alt.svg') }}" alt=""> trackd · powered by MusicBrainz</span>
+            <nav aria-label="Footer navigation"><a href="#">About</a><a href="#">Privacy</a><a href="#">GDPR</a><a href="#">Moderation</a></nav>
+        </footer>
+    </div>
+{% endblock %}

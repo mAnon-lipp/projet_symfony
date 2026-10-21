@@ -1,0 +1,9 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Search icon">
+<path id="Handle" d="M9.1868 9.1868L12.25 12.25" stroke-width="1.31" stroke-linecap="round" stroke="#928D87"/>
+<mask id="stroke0_0_7" fill="white">
+<path d="M5.6868 10.0618C8.10305 10.0618 10.0618 8.10305 10.0618 5.6868C10.0618 3.27055 8.10305 1.3118 5.6868 1.3118C3.27055 1.3118 1.3118 3.27055 1.3118 5.6868C1.3118 8.10305 3.27055 10.0618 5.6868 10.0618Z"/>
+</mask>
+<path id="Lens" d="M10.0618 5.6868C10.0618 8.10305 8.10305 10.0618 5.6868 10.0618C3.27055 10.0618 1.3118 8.10305 1.3118 5.6868C1.3118 3.27055 3.27055 1.3118 5.6868 1.3118C8.10305 1.3118 10.0618 3.27055 10.0618 5.6868Z" stroke-width="2.62" stroke="#928D87" mask="url(#stroke0_0_7)"/>
+</g>
+</svg>
