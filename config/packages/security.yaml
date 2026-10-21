@@ -19,7 +19,10 @@ security:
         main:
             lazy: true
             provider: app_user_provider
-            custom_authenticator: App\Security\AppAuthentificationAuthenticator
+            custom_authenticator:
+                - App\Security\AppAuthentificationAuthenticator
+                - App\Security\AppAdminAuthenticator
+            entry_point: App\Security\AppAuthenticationEntryPoint
             logout:
                 path: app_logout
                 # where to redirect after logout
@@ -29,6 +32,7 @@ security:
                 secret: '%kernel.secret%'
                 lifetime: 604800
                 path: /
+                #always_remember_me: true
                 # by default, the feature is enabled by checking a checkbox in the
                 # login form, uncomment the following line to always enable it.
                 #always_remember_me: true
@@ -41,9 +45,10 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
+        - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/admin/login$, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/diary, roles: ROLE_USER }
 
 when@test:
     security:

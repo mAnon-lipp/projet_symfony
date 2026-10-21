@@ -9,7 +9,7 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController
 {
-    #[Route(path: '/admin/login', name: 'admin_login')]
+    #[Route(path: '/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
         $error = $authenticationUtils->getLastAuthenticationError();
@@ -18,12 +18,6 @@ class SecurityController extends AbstractController
         return $this->render('security/login.html.twig', [
             'error' => $error,
             'last_username' => $lastUsername,
-            'action' => $this->generateUrl('admin_login'),
-            'target_path' => $this->generateUrl('admin'),
-            'csrf_token_intention' => 'authenticate',
-            'username_parameter' => 'email',
-            'password_parameter' => 'password',
-            'remember_me_enabled' => true,
         ]);
     }
 

@@ -11,6 +11,10 @@ final class HomeController extends AbstractController
     #[Route('/', name: 'app_home', methods: ['GET'])]
     public function index(): Response
     {
+        if ($this->getUser() !== null) {
+            return $this->redirectToRoute('app_diary');
+        }
+
         return $this->render('home/index.html.twig', [
             'community_lists' => [
                 [

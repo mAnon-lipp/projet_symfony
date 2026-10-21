@@ -26,8 +26,8 @@
             </nav>
 
             <div class="account-actions">
-                <a class="sign-in" href="{{ path('admin_login') }}">Sign in</a>
-                <a class="sign-up" href="{{ path('admin_login') }}">Sign up</a>
+                <a class="sign-in" href="{{ path('app_login') }}">Sign in</a>
+                <a class="sign-up" href="{{ path('app_register') }}">Sign up</a>
             </div>
         </header>
 
@@ -46,10 +46,10 @@
                         </div>
                         <p class="hero-copy">A masterpiece of restraint and intimacy. Thom Yorke at his most nakedly human, wrapped in the band's most cohesive, warmly produced record. A decade on, it still sounds like nothing else.</p>
                         <div class="hero-actions">
-                            <a class="primary-button" href="{{ path('admin_login') }}">Sign in to log</a>
+                            <a class="primary-button" href="{{ path('app_login') }}">Sign in to log</a>
                             <a class="secondary-button" href="#community">Read reviews</a>
                         </div>
-                        <p class="helper-copy">New to trackd? <a href="{{ path('admin_login') }}">Sign up</a> to rate and review.</p>
+                        <p class="helper-copy">New to trackd? <a href="{{ path('app_register') }}">Sign up</a> to rate and review.</p>
                     </div>
                 </div>
             </section>
@@ -70,7 +70,11 @@
                                 <h3>{{ list.title }}</h3>
                                 <p class="muted">{{ list.artist }}</p>
                                 <div class="reviewer"><img src="{{ asset('images/home/' ~ list.avatar) }}" alt=""><span>{{ list.user }}</span><time>{{ list.time }}</time></div>
-                                <div class="mini-rating" aria-label="{{ list.rating }} out of 5 stars">{{ '★'|repeat(list.rating) }}<span>{{ '☆'|repeat(5 - list.rating) }}</span></div>
+                                <div class="mini-rating" aria-label="{{ list.rating }} out of 5 stars">
+                                    {% for star in 1..5 %}
+                                        {% if star <= list.rating %}★{% else %}<span>☆</span>{% endif %}
+                                    {% endfor %}
+                                </div>
                                 <p class="description">“{{ list.description }}”</p>
                             </div>
                         </article>
@@ -84,7 +88,7 @@
                         <h2>Popular This Month</h2>
                         <p>Most logged albums among our members</p>
                     </div>
-                    <a class="see-all" href="{{ path('admin_login') }}">Full chart →</a>
+                    <a class="see-all" href="{{ path('app_login') }}">Full chart →</a>
                 </div>
                 <div class="popular-grid">
                     {% for album in popular_albums %}

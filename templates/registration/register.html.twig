@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Sign up{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="trackd-page registration-page">
+        <header class="site-header">
+            <a class="brand" href="{{ path('app_home') }}" aria-label="trackd home">
+                <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
+                <span>trackd</span>
+            </a>
+        </header>
+
+        <main class="registration-main">
+            <section class="registration-card" aria-labelledby="registration-title">
+                <p class="eyebrow">JOIN TRACKD</p>
+                {{ form_start(registrationForm, { attr: { class: 'registration-form' } }) }}
+                    <h1 id="registration-title">Create your account</h1>
+                    {{ form_errors(registrationForm) }}
+                    {{ form_row(registrationForm.username, {
+                        label: 'Username',
+                        attr: { autocomplete: 'username' }
+                    }) }}
+                    {{ form_row(registrationForm.email, {
+                        label: 'Email',
+                        attr: { autocomplete: 'email' }
+                    }) }}
+                    {{ form_row(registrationForm.plainPassword, {
+                        label: 'Password'
+                    }) }}
+                    {{ form_row(registrationForm.agreeTerms, {
+                        label: 'I agree to the terms and conditions'
+                    }) }}
+
+                    <button type="submit" class="primary-button registration-submit">Sign up</button>
+                {{ form_end(registrationForm) }}
+            </section>
+        </main>
+    </div>
+{% endblock %}

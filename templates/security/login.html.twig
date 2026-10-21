@@ -1,1 +1,52 @@
-{% extends '@EasyAdmin/page/login.html.twig' %}
+{% extends 'base.html.twig' %}
+
+{% block title %}Log in!{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="trackd-page login-page">
+        <header class="site-header">
+            <a class="brand" href="{{ path('app_home') }}" aria-label="trackd home">
+                <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
+                <span>trackd</span>
+            </a>
+        </header>
+
+        <main class="login-main">
+            <section class="login-card" aria-labelledby="login-title">
+                <p class="eyebrow">WELCOME BACK</p>
+                <form method="post" class="login-form">
+                    {% if error %}
+                        <div class="login-alert" role="alert">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+                    {% endif %}
+
+                    {% if app.user %}
+                        <div class="login-status">
+                            You are logged in as {{ app.user.userIdentifier }}, <a href="{{ logout_path() }}">Logout</a>
+                        </div>
+                    {% endif %}
+
+                    <h1 id="login-title">Please sign in</h1>
+                    <label for="inputEmail">Email</label>
+                    <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" autocomplete="email" required autofocus>
+                    <label for="inputPassword">Password</label>
+                    <input type="password" name="password" id="inputPassword" class="form-control" autocomplete="current-password" required>
+                    <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
+
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="_remember_me"> Remember me
+                        </label>
+                    </div>
+
+                    <button class="primary-button login-submit" type="submit">
+                        Sign in
+                    </button>
+                </form>
+            </section>
+        </main>
+    </div>
+{% endblock %}

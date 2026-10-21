@@ -28,6 +28,12 @@ final class MusicCatalogService
         $album = $this->albumRepository->findOneByTitleAndArtist($albumTitle, $artist);
 
         if ($album instanceof Album) {
+            if ($album->getCoverUrl() === '' || $album->getGenre()?->getName() === 'Unknown') {
+                $release = $this->musicBrainzClient->findRelease($albumTitle, $artistName);
+                $this->completeAlbumMetadata($album, $release);
+                $this->entityManager->flush();
+            }
+
             return $album;
         }
 
@@ -36,7 +42,7 @@ final class MusicCatalogService
         $album->setTitle((string) ($release['title'] ?? $albumTitle));
         $album->setArtist($artist);
         $album->setReleaseDate($this->parseReleaseDate($release['date'] ?? null));
-        $album->setCoverUrl('');
+        $album->setCoverUrl((string) ($release['coverUrl'] ?? ''));
         $album->setCreatedAt(new \DateTimeImmutable());
         $album->setGenre($this->findOrCreateGenre($this->extractGenre($release)));
 
@@ -57,6 +63,21 @@ final class MusicCatalogService
         return $album;
     }
 
+    /**
+     * @param array<string, mixed> $release
+     */
+    private function completeAlbumMetadata(Album $album, array $release): void
+    {
+        $coverUrl = $release['coverUrl'] ?? null;
+        if ($album->getCoverUrl() === '' && is_string($coverUrl)) {
+            $album->setCoverUrl($coverUrl);
+        }
+
+        if ($album->getGenre()?->getName() === 'Unknown') {
+            $album->setGenre($this->findOrCreateGenre($this->extractGenre($release)));
+        }
+    }
+
     private function findOrCreateArtist(string $name): Artist
     {
         $artist = $this->artistRepository->findOneByNormalizedName($name);
@@ -74,6 +95,7 @@ final class MusicCatalogService
         $artist->setImageUrl('');
         $artist->setCreatedAt(new \DateTimeImmutable());
         $this->entityManager->persist($artist);
+        $this->entityManager->flush();
 
         return $artist;
     }
@@ -113,7 +135,22 @@ final class MusicCatalogService
 
     private function extractGenre(array $release): string
     {
-        $genre = $release['genres'][0]['name'] ?? null;
+        $genres = [];
+        foreach ([$release['genres'] ?? [], $release['release-group']['genres'] ?? [], $release['tags'] ?? []] as $values) {
+            if (is_array($values)) {
+                foreach ($values as $value) {
+                    if (is_array($value) && isset($value['name'])) {
+                        $genres[] = $value;
+                    }
+                }
+            }
+        }
+
+        usort($genres, static function (mixed $left, mixed $right): int {
+            return (int) ($right['count'] ?? 0) <=> (int) ($left['count'] ?? 0);
+        });
+
+        $genre = $genres[0]['name'] ?? null;
 
         return is_string($genre) && trim($genre) !== '' ? trim($genre) : 'Unknown';
     }

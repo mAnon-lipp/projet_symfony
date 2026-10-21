@@ -1,0 +1,119 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Your diary — trackd{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="trackd-page diary-page">
+        <header class="site-header">
+            <a class="brand" href="{{ path('app_diary') }}" aria-label="trackd diary">
+                <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
+                <span>trackd</span>
+            </a>
+
+            <label class="search-box">
+                <img src="{{ asset('images/home/search.svg') }}" alt="">
+                <input type="search" placeholder="Search albums, artists, labels…" aria-label="Search albums, artists, labels">
+                <kbd>⌘K</kbd>
+            </label>
+
+            <nav class="public-nav diary-nav" aria-label="Account navigation">
+                <a class="active" href="{{ path('app_diary') }}">Diary</a>
+                <a href="{{ path('app_home') }}">Explore</a>
+                <a href="#lists">Lists</a>
+            </nav>
+
+            <div class="account-actions">
+                <span class="diary-user">{{ app.user.username ?: app.user.userIdentifier }}</span>
+                <a class="sign-in" href="{{ logout_path() }}">Log out</a>
+            </div>
+        </header>
+
+        <main class="diary-content">
+            <section class="diary-intro" aria-labelledby="diary-title">
+                <div>
+                    <p class="eyebrow">YOUR MUSIC JOURNAL</p>
+                    <h1 id="diary-title">Diary</h1>
+                    <p>Keep track of the albums you listened to.</p>
+                </div>
+                <span class="diary-count">{{ entries|length }} {{ entries|length == 1 ? 'album' : 'albums' }} logged</span>
+            </section>
+
+            <section class="diary-add-card" aria-labelledby="add-album-title">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="add-album-title">Add an album</h2>
+                        <p>What did you listen to?</p>
+                    </div>
+                </div>
+
+                {% for message in app.flashes('success') %}
+                    <div class="diary-success" role="status">{{ message }}</div>
+                {% endfor %}
+                {% if form_errors %}
+                    <div class="login-alert" role="alert">
+                        <ul>
+                            {% for error in form_errors %}<li>{{ error }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <form method="post" class="diary-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('diary_entry') }}">
+                    <label>
+                        Artist
+                        <input type="text" name="artist" value="{{ form_values.artist }}" placeholder="e.g. Radiohead" required>
+                    </label>
+                    <label>
+                        Album
+                        <input type="text" name="album" value="{{ form_values.album }}" placeholder="e.g. In Rainbows" required>
+                    </label>
+                    <label>
+                        Listened on
+                        <input type="date" name="listened_at" value="{{ form_values.listened_at }}" required>
+                    </label>
+                    <button class="primary-button" type="submit">Add to diary</button>
+                </form>
+            </section>
+
+            <section class="diary-list" aria-labelledby="recent-listens-title">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="recent-listens-title">Recent listens</h2>
+                        <p>Your listening history, newest first</p>
+                    </div>
+                </div>
+
+                {% if entries is empty %}
+                    <div class="diary-empty">
+                        <p>No albums in your diary yet.</p>
+                        <span>Add your first listen above to start your journal.</span>
+                    </div>
+                {% else %}
+                    <div class="diary-entries">
+                        {% for entry in entries %}
+                            <article class="diary-entry">
+                                <div class="diary-entry-date">
+                                    <strong>{{ entry.listenedAt|date('d') }}</strong>
+                                    <span>{{ entry.listenedAt|date('M Y') }}</span>
+                                </div>
+                                {% if entry.albumId.coverUrl %}
+                                    <img class="diary-entry-cover" src="{{ entry.albumId.coverUrl }}" alt="{{ entry.albumId.title }} cover">
+                                {% else %}
+                                    <div class="diary-entry-cover diary-entry-cover-placeholder" aria-hidden="true">♪</div>
+                                {% endif %}
+                                <div class="diary-entry-details">
+                                    <h3>{{ entry.albumId.title }}</h3>
+                                    <p>{{ entry.albumId.artist.name }} · {{ entry.albumId.genre.name }}</p>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+{% endblock %}
