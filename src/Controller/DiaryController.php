@@ -34,6 +34,9 @@ final class DiaryController extends AbstractController
             $artist = trim((string) $payload->get('artist'));
             $albumTitle = trim((string) $payload->get('album'));
             $listenedAtValue = trim((string) $payload->get('listened_at'));
+            $ratingValue = trim((string) $payload->get('rating'));
+            $comment = trim((string) $payload->get('comment'));
+            $isFavorite = $payload->get('is_favorite') !== null;
 
             if (!$this->isCsrfTokenValid('diary_entry', (string) $payload->get('_token'))) {
                 $formErrors[] = 'Your session expired. Please try again.';
@@ -46,6 +49,9 @@ final class DiaryController extends AbstractController
             }
             if ($listenedAt === false || ($dateErrors !== false && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0))) {
                 $formErrors[] = 'Choose a valid listening date.';
+            }
+            if (!in_array($ratingValue, ['1', '2', '3', '4', '5'], true)) {
+                $formErrors[] = 'Choose a rating from 1 to 5 stars.';
             }
 
             if ($formErrors === [] && $listenedAt instanceof \DateTimeImmutable) {
@@ -60,10 +66,10 @@ final class DiaryController extends AbstractController
                 $review = new Review();
                 $review->setUserId($user);
                 $review->setAlbumId($album);
-                $review->setRating(0);
-                $review->setComment('');
+                $review->setRating((int) $ratingValue);
+                $review->setComment($comment);
                 $review->setListenedAt($listenedAt);
-                $review->setIsFavorite(false);
+                $review->setIsFavorite($isFavorite);
                 $review->setCreatedAt(new \DateTimeImmutable());
 
                 $entityManager->persist($review);
@@ -85,6 +91,71 @@ final class DiaryController extends AbstractController
                 'artist' => (string) ($request->getPayload()->get('artist') ?? ''),
                 'album' => (string) ($request->getPayload()->get('album') ?? ''),
                 'listened_at' => (string) ($request->getPayload()->get('listened_at') ?? (new \DateTimeImmutable())->format('Y-m-d')),
+                'rating' => (string) ($request->getPayload()->get('rating') ?? ''),
+                'comment' => (string) ($request->getPayload()->get('comment') ?? ''),
+                'is_favorite' => $request->getPayload()->get('is_favorite') !== null,
+            ],
+        ]);
+    }
+
+    #[Route('/diary/{id}/edit', name: 'app_diary_edit', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function edit(
+        int $id,
+        Request $request,
+        ReviewRepository $reviewRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $review = $reviewRepository->findOneBy(['id' => $id, 'user_id' => $user]);
+        if (!$review instanceof Review) {
+            throw $this->createNotFoundException('Listening entry not found.');
+        }
+
+        $formErrors = [];
+        $ratingValue = (string) $review->getRating();
+        $comment = $review->getComment() ?? '';
+        $isFavorite = $review->isFavorite() ?? false;
+
+        if ($request->isMethod('POST')) {
+            $payload = $request->getPayload();
+            $ratingValue = trim((string) $payload->get('rating'));
+            $comment = trim((string) $payload->get('comment'));
+            $isFavorite = $payload->get('is_favorite') !== null;
+
+            if (!$this->isCsrfTokenValid('diary_edit_'.$review->getId(), (string) $payload->get('_token'))) {
+                $formErrors[] = 'Your session expired. Please try again.';
+            }
+            if (!in_array($ratingValue, ['1', '2', '3', '4', '5'], true)) {
+                $formErrors[] = 'Choose a rating from 1 to 5 stars.';
+            }
+
+            if ($formErrors === []) {
+                $review
+                    ->setRating((int) $ratingValue)
+                    ->setComment($comment)
+                    ->setIsFavorite($isFavorite)
+                    ->setUpdatedAt(new \DateTimeImmutable());
+
+                $entityManager->flush();
+
+                $this->addFlash('success', 'Diary entry updated.');
+
+                return $this->redirectToRoute('app_diary');
+            }
+        }
+
+        return $this->render('diary/edit.html.twig', [
+            'entry' => $review,
+            'form_errors' => $formErrors,
+            'form_values' => [
+                'rating' => $ratingValue,
+                'comment' => $comment,
+                'is_favorite' => $isFavorite,
             ],
         ]);
     }

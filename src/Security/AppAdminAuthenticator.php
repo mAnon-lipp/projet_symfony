@@ -45,7 +45,9 @@ class AppAdminAuthenticator extends AbstractLoginFormAuthenticator
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
         if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
-            return new RedirectResponse($targetPath);
+            if ($targetPath === '/admin' || str_starts_with($targetPath, '/admin/')) {
+                return new RedirectResponse($targetPath);
+            }
         }
 
         return new RedirectResponse($this->urlGenerator->generate('admin'));

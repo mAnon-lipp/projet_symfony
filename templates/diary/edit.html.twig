@@ -1,0 +1,78 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit diary entry — trackd{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="trackd-page diary-page">
+        <header class="site-header">
+            <a class="brand" href="{{ path('app_diary') }}" aria-label="trackd diary">
+                <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
+                <span>trackd</span>
+            </a>
+
+            <nav class="public-nav diary-nav" aria-label="Account navigation">
+                <a class="active" href="{{ path('app_diary') }}">Diary</a>
+                <a href="{{ path('app_home') }}">Explore</a>
+            </nav>
+
+            <div class="account-actions">
+                <span class="diary-user">{{ app.user.username ?: app.user.userIdentifier }}</span>
+                <a class="sign-in" href="{{ logout_path() }}">Log out</a>
+            </div>
+        </header>
+
+        <main class="diary-content">
+            <section class="diary-add-card diary-edit-card" aria-labelledby="edit-entry-title">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">YOUR MUSIC JOURNAL</p>
+                        <h1 id="edit-entry-title">Edit listen</h1>
+                        <p>Update your rating, comment or favorite status.</p>
+                    </div>
+                </div>
+
+                {% if form_errors %}
+                    <div class="login-alert" role="alert">
+                        <ul>
+                            {% for error in form_errors %}<li>{{ error }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <div class="diary-entry-details">
+                    <h2>{{ entry.albumId.title }}</h2>
+                    <p class="diary-readonly">{{ entry.albumId.artist.name }} · Listened on {{ entry.listenedAt|date('d/m/Y') }}</p>
+                </div>
+
+                <form method="post" class="diary-form diary-edit-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('diary_edit_' ~ entry.id) }}">
+                    <fieldset class="rating-field">
+                        <legend>Rating</legend>
+                        <div class="star-rating">
+                            {% for star in 1..5 %}
+                                <label class="star-option">
+                                    <input type="radio" name="rating" value="{{ star }}" {% if form_values.rating == star|number_format(0) %}checked{% endif %} required>
+                                    <span aria-hidden="true">★</span>
+                                    <span class="visually-hidden">{{ star }} star{{ star == 1 ? '' : 's' }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                    <label class="comment-field">
+                        Comment
+                        <textarea name="comment" rows="4" placeholder="What did you think?">{{ form_values.comment }}</textarea>
+                    </label>
+                    <label class="favorite-field">
+                        <input type="checkbox" name="is_favorite" value="1" {% if form_values.is_favorite %}checked{% endif %}>
+                        Add to favorite albums
+                    </label>
+                    <button class="primary-button" type="submit">Save changes</button>
+                </form>
+            </section>
+        </main>
+    </div>
+{% endblock %}
