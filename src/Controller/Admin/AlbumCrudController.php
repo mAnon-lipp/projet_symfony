@@ -24,6 +24,7 @@ class AlbumCrudController extends AbstractCrudController
                 ->autocomplete(),
             AssociationField::new('genre')
                 ->autocomplete(),
+            TextField::new('label'),
             ImageField::new('cover_url')
                 ->setUploadDir('public/uploads/covers')
                 ->setBasePath('uploads/covers')

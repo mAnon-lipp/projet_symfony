@@ -43,35 +43,45 @@
                     </div>
                 {% endif %}
 
-                <div class="diary-entry-details">
-                    <h2>{{ entry.albumId.title }}</h2>
-                    <p class="diary-readonly">{{ entry.albumId.artist.name }} · Listened on {{ entry.listenedAt|date('d/m/Y') }}</p>
-                </div>
-
-                <form method="post" class="diary-form diary-edit-form">
-                    <input type="hidden" name="_token" value="{{ csrf_token('diary_edit_' ~ entry.id) }}">
-                    <fieldset class="rating-field">
-                        <legend>Rating</legend>
-                        <div class="star-rating">
-                            {% for star in 1..5 %}
-                                <label class="star-option">
-                                    <input type="radio" name="rating" value="{{ star }}" {% if form_values.rating == star|number_format(0) %}checked{% endif %} required>
-                                    <span aria-hidden="true">★</span>
-                                    <span class="visually-hidden">{{ star }} star{{ star == 1 ? '' : 's' }}</span>
-                                </label>
-                            {% endfor %}
+                <div class="diary-edit-layout">
+                    <div class="diary-edit-main">
+                        <div class="diary-entry-details">
+                            <h2>{{ entry.albumId.title }}</h2>
+                            <p class="diary-readonly">{{ entry.albumId.artist.name }} · Listened on {{ entry.listenedAt|date('d/m/Y') }}</p>
                         </div>
-                    </fieldset>
-                    <label class="comment-field">
-                        Comment
-                        <textarea name="comment" rows="4" placeholder="What did you think?">{{ form_values.comment }}</textarea>
-                    </label>
-                    <label class="favorite-field">
-                        <input type="checkbox" name="is_favorite" value="1" {% if form_values.is_favorite %}checked{% endif %}>
-                        Add to favorite albums
-                    </label>
-                    <button class="primary-button" type="submit">Save changes</button>
-                </form>
+
+                        <form method="post" class="diary-form diary-edit-form">
+                            <input type="hidden" name="_token" value="{{ csrf_token('diary_edit_' ~ entry.id) }}">
+                            <fieldset class="rating-field">
+                                <legend>Rating</legend>
+                                <div class="star-rating">
+                                    {% for star in 1..5 %}
+                                        <label class="star-option">
+                                            <input type="radio" name="rating" value="{{ star }}" {% if form_values.rating == star|number_format(0) %}checked{% endif %} required>
+                                            <span aria-hidden="true">★</span>
+                                            <span class="visually-hidden">{{ star }} star{{ star == 1 ? '' : 's' }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </fieldset>
+                            <label class="comment-field">
+                                Comment
+                                <textarea name="comment" rows="4" placeholder="What did you think?">{{ form_values.comment }}</textarea>
+                            </label>
+                            <label class="favorite-field">
+                                <input type="checkbox" name="is_favorite" value="1" {% if form_values.is_favorite %}checked{% endif %}>
+                                Add to favorite albums
+                            </label>
+                            <button class="primary-button" type="submit">Save changes</button>
+                        </form>
+                    </div>
+
+                    {% if entry.albumId.coverUrl %}
+                        <aside class="diary-edit-cover">
+                            <img src="{{ entry.albumId.coverUrl }}" alt="{{ entry.albumId.title }} cover">
+                        </aside>
+                    {% endif %}
+                </div>
             </section>
         </main>
     </div>

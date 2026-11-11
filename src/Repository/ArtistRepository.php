@@ -25,6 +25,20 @@ class ArtistRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * @return Artist[]
+     */
+    public function findForAutocomplete(string $query, int $limit = 5): array
+    {
+        return $this->createQueryBuilder('artist')
+            ->andWhere('LOWER(artist.name) LIKE LOWER(:query)')
+            ->setParameter('query', '%' . trim($query) . '%')
+            ->orderBy('artist.name', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return Artist[] Returns an array of Artist objects
 //     */

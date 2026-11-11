@@ -18,11 +18,14 @@ class Album
     #[ORM\Column(length: 255)]
     private ?string $title = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $release_date = null;
 
     #[ORM\Column(length: 255)]
     private ?string $cover_url = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $label = null;
 
     #[ORM\ManyToOne(inversedBy: 'albums')]
     #[ORM\JoinColumn(nullable: false)]
@@ -44,7 +47,7 @@ class Album
     /**
      * @var Collection<int, Track>
      */
-    #[ORM\OneToMany(targetEntity: Track::class, mappedBy: 'album')]
+    #[ORM\OneToMany(targetEntity: Track::class, mappedBy: 'album', cascade: ['remove'])]
     private Collection $tracks;
 
     public function __construct()
@@ -80,7 +83,7 @@ class Album
         return $this->release_date;
     }
 
-    public function setReleaseDate(\DateTimeImmutable $release_date): static
+    public function setReleaseDate(?\DateTimeImmutable $release_date): static
     {
         $this->release_date = $release_date;
 
@@ -95,6 +98,18 @@ class Album
     public function setCoverUrl(string $cover_url): static
     {
         $this->cover_url = $cover_url;
+
+        return $this;
+    }
+
+    public function getLabel(): ?string
+    {
+        return $this->label;
+    }
+
+    public function setLabel(?string $label): static
+    {
+        $this->label = $label;
 
         return $this;
     }
@@ -193,5 +208,13 @@ class Album
         }
 
         return $this;
+    }
+
+    public function getTotalDuration(): int
+    {
+        return array_sum(array_map(
+            static fn (Track $track): int => $track->getDuration() ?? 0,
+            $this->tracks->toArray(),
+        ));
     }
 }

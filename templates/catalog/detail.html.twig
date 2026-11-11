@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ album.title }} — trackd{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="trackd-page">
+        <header class="site-header">
+            <a class="brand" href="{{ path('app_home') }}" aria-label="trackd home">
+                <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
+                <span>trackd</span>
+            </a>
+            <form class="search-box search-form" action="{{ path('catalog_search') }}" method="get" data-autocomplete-url="{{ path('api_catalog_autocomplete') }}">
+                <img src="{{ asset('images/home/search.svg') }}" alt="">
+                <input name="q" type="search" placeholder="Rechercher un album ou un artiste…" aria-label="Rechercher un album ou un artiste" autocomplete="off">
+                <div class="autocomplete-results" role="listbox"></div>
+            </form>
+            <nav class="public-nav" aria-label="Navigation"><a href="{{ path('catalog_search') }}">Catalogue</a></nav>
+            <div class="account-actions"><a class="sign-in" href="{{ path('app_login') }}">Se connecter</a><a class="sign-up" href="{{ path('app_register') }}">S’inscrire</a></div>
+        </header>
+
+        <main class="album-detail">
+            <a class="album-back-link" href="{{ path('catalog_search') }}">← Retour au catalogue</a>
+            <section class="album-detail-header">
+                {% if album.coverUrl %}<img class="album-detail-cover" src="{{ album.coverUrl }}" alt="{{ album.title }}">{% else %}<div class="album-detail-cover album-detail-cover-placeholder">♪</div>{% endif %}
+                <div class="album-detail-info">
+                    <p class="eyebrow">ALBUM</p>
+                    <h1>{{ album.title }}</h1>
+                    <p class="album-detail-artist">{{ album.artist.name }}</p>
+                    <dl class="album-facts">
+                        <div><dt>Genre</dt><dd>{{ album.genre.name }}</dd></div>
+                        <div><dt>Sortie</dt><dd>{{ album.releaseDate ? album.releaseDate|date('d/m/Y') : 'Non renseignée' }}</dd></div>
+                        <div><dt>Durée</dt><dd>{{ (album.totalDuration // 60)|format('%02d') }}:{{ (album.totalDuration % 60)|format('%02d') }}</dd></div>
+                        <div><dt>Label</dt><dd>{{ album.label ?: 'Non renseigné' }}</dd></div>
+                    </dl>
+                </div>
+            </section>
+
+            <section class="track-list" aria-labelledby="track-list-title">
+                <div class="section-heading"><div><p class="eyebrow">CONTENU</p><h2 id="track-list-title">Liste des titres</h2></div><span class="diary-count">{{ tracks|length }} titre{{ tracks|length > 1 ? 's' : '' }}</span></div>
+                {% if tracks is empty %}
+                    <div class="diary-empty"><p>Aucun titre renseigné</p><span>La liste des titres n’est pas disponible pour cet album.</span></div>
+                {% else %}
+                    <ol class="track-rows">
+                        {% for track in tracks %}
+                            <li><span class="track-number">{{ track.trackNumber }}</span><span class="track-title">{{ track.title }}{% if track.explicit %} <small>Explicit</small>{% endif %}</span><time>{{ (track.duration // 60)|format('%02d') }}:{{ (track.duration % 60)|format('%02d') }}</time></li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+{% endblock %}

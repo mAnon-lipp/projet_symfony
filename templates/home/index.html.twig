@@ -14,11 +14,12 @@
                 <span>trackd</span>
             </a>
 
-            <label class="search-box">
+            <form class="search-box search-form" action="{{ path('catalog_search') }}" method="get" data-autocomplete-url="{{ path('api_catalog_autocomplete') }}">
                 <img src="{{ asset('images/home/search.svg') }}" alt="">
-                <input type="search" placeholder="Search albums, artists, labels…" aria-label="Search albums, artists, labels">
+                <input name="q" type="search" placeholder="Rechercher albums ou artistes…" aria-label="Rechercher albums ou artistes" autocomplete="off">
                 <kbd>⌘K</kbd>
-            </label>
+                <div class="autocomplete-results" role="listbox"></div>
+            </form>
 
             <nav class="public-nav" aria-label="Public navigation">
                 <a href="#community">Explore</a>
@@ -108,4 +109,31 @@
             <nav aria-label="Footer navigation"><a href="#">About</a><a href="#">Privacy</a><a href="#">GDPR</a><a href="#">Moderation</a></nav>
         </footer>
     </div>
+    <script>
+        (() => {
+            const form = document.querySelector('.search-form'), input = form?.querySelector('input'), results = form?.querySelector('.autocomplete-results');
+            if (!form || !input || !results) return;
+            let timer;
+            input.addEventListener('input', () => {
+                clearTimeout(timer);
+                const query = input.value.trim();
+                if (query.length < 2) { results.replaceChildren(); return; }
+                timer = setTimeout(async () => {
+                    const response = await fetch(`${form.dataset.autocompleteUrl}?q=${encodeURIComponent(query)}`);
+                    if (!response.ok) return;
+                    results.replaceChildren(...(await response.json()).map(item => {
+                        const link = document.createElement('a');
+                        link.href = item.url; link.setAttribute('role', 'option');
+                        const label = document.createElement('strong');
+                        const meta = document.createElement('small');
+                        label.textContent = item.label;
+                        meta.textContent = item.type + (item.artist ? ` · ${item.artist}` : '');
+                        link.append(label, meta);
+                        return link;
+                    }));
+                }, 180);
+            });
+            document.addEventListener('click', event => { if (!form.contains(event.target)) results.replaceChildren(); });
+        })();
+    </script>
 {% endblock %}

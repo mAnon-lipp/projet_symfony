@@ -1,0 +1,80 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Recherche — trackd{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="trackd-page">
+        <header class="site-header">
+            <a class="brand" href="{{ path('app_home') }}" aria-label="trackd home">
+                <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
+                <span>trackd</span>
+            </a>
+            <form class="search-box search-form" action="{{ path('catalog_search') }}" method="get" data-autocomplete-url="{{ path('api_catalog_autocomplete') }}">
+                <img src="{{ asset('images/home/search.svg') }}" alt="">
+                <input name="q" type="search" value="{{ query }}" placeholder="Rechercher un album ou un artiste…" aria-label="Rechercher un album ou un artiste" autocomplete="off">
+                <div class="autocomplete-results" role="listbox"></div>
+            </form>
+            <nav class="public-nav" aria-label="Navigation"><a href="{{ path('app_home') }}">Accueil</a></nav>
+            <div class="account-actions"><a class="sign-in" href="{{ path('app_login') }}">Se connecter</a><a class="sign-up" href="{{ path('app_register') }}">S’inscrire</a></div>
+        </header>
+
+        <main class="catalog-content">
+            <div class="section-heading">
+                <div><p class="eyebrow">CATALOGUE</p><h1>Rechercher de la musique</h1></div>
+                <span class="diary-count">{{ albums|length }} résultat{{ albums|length > 1 ? 's' : '' }}</span>
+            </div>
+            <form class="catalog-filters" method="get">
+                <label>Recherche<input name="q" value="{{ query }}" placeholder="Album ou artiste"></label>
+                <label>Genre<select name="genre"><option value="">Tous les genres</option>{% for genre in genres %}<option value="{{ genre.id }}" {{ selected_genre == genre.id ? 'selected' : '' }}>{{ genre.name }}</option>{% endfor %}</select></label>
+                <label>Année de sortie<input name="year" type="number" min="1900" max="2100" value="{{ selected_year }}" placeholder="Ex. 2020"></label>
+                <button class="primary-button" type="submit">Filtrer</button>
+            </form>
+            {% if albums is empty %}
+                <div class="diary-empty"><p>Aucun album trouvé</p><span>Essayez un autre album, artiste, genre ou année.</span></div>
+            {% else %}
+                <div class="catalog-grid">
+                    {% for album in albums %}
+                        <a class="catalog-card" href="{{ path('catalog_album_detail', {id: album.id}) }}">
+                            {% if album.coverUrl %}<img src="{{ album.coverUrl }}" alt="{{ album.title }}">{% else %}<div class="catalog-cover-placeholder">♪</div>{% endif %}
+                            <div><h2>{{ album.title }}</h2><p>{{ album.artist.name }}</p><small>{{ album.genre.name }}{% if album.releaseDate %} · {{ album.releaseDate|date('Y') }}{% endif %}</small></div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </main>
+    </div>
+    <script>
+        (() => {
+            const form = document.querySelector('.search-form');
+            const input = form?.querySelector('input');
+            const results = form?.querySelector('.autocomplete-results');
+            if (!form || !input || !results) return;
+            let timer;
+            input.addEventListener('input', () => {
+                clearTimeout(timer);
+                const query = input.value.trim();
+                if (query.length < 2) { results.replaceChildren(); return; }
+                timer = setTimeout(async () => {
+                    const response = await fetch(`${form.dataset.autocompleteUrl}?q=${encodeURIComponent(query)}`);
+                    if (!response.ok) return;
+                    results.replaceChildren(...(await response.json()).map(item => {
+                        const link = document.createElement('a');
+                        link.href = item.url;
+                        link.setAttribute('role', 'option');
+                        const label = document.createElement('strong');
+                        const meta = document.createElement('small');
+                        label.textContent = item.label;
+                        meta.textContent = item.type + (item.artist ? ` · ${item.artist}` : '');
+                        link.append(label, meta);
+                        return link;
+                    }));
+                }, 180);
+            });
+            document.addEventListener('click', event => { if (!form.contains(event.target)) results.replaceChildren(); });
+        })();
+    </script>
+{% endblock %}

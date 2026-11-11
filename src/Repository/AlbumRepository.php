@@ -28,6 +28,75 @@ class AlbumRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * @return Album[]
+     */
+    public function search(?string $query = null, ?int $genreId = null, ?int $year = null, int $limit = 50): array
+    {
+        $builder = $this->createQueryBuilder('album')
+            ->leftJoin('album.artist', 'artist')
+            ->leftJoin('album.genre', 'genre')
+            ->addSelect('artist', 'genre')
+            ->orderBy('album.title', 'ASC')
+            ->setMaxResults($limit);
+
+        if ($query !== null && trim($query) !== '') {
+            $builder
+                ->andWhere('(LOWER(album.title) LIKE LOWER(:query) OR LOWER(artist.name) LIKE LOWER(:query))')
+                ->setParameter('query', '%' . trim($query) . '%');
+        }
+
+        if ($genreId !== null) {
+            $builder
+                ->andWhere('genre.id = :genreId')
+                ->setParameter('genreId', $genreId);
+        }
+
+        if ($year !== null) {
+            $start = new \DateTimeImmutable(sprintf('%d-01-01', $year));
+            $end = $start->modify('+1 year');
+            $builder
+                ->andWhere('album.release_date >= :yearStart')
+                ->andWhere('album.release_date < :yearEnd')
+                ->setParameter('yearStart', $start)
+                ->setParameter('yearEnd', $end);
+        }
+
+        return $builder->getQuery()->getResult();
+    }
+
+    /**
+     * @return Album[]
+     */
+    public function findForAutocomplete(string $query, int $limit = 5): array
+    {
+        return $this->createQueryBuilder('album')
+            ->leftJoin('album.artist', 'artist')
+            ->addSelect('artist')
+            ->andWhere('(LOWER(album.title) LIKE LOWER(:query) OR LOWER(artist.name) LIKE LOWER(:query))')
+            ->setParameter('query', '%' . trim($query) . '%')
+            ->orderBy('album.title', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Album[]
+     */
+    public function findAlbumsForAutocomplete(string $query, int $limit = 8): array
+    {
+        return $this->createQueryBuilder('album')
+            ->leftJoin('album.artist', 'artist')
+            ->addSelect('artist')
+            ->andWhere('LOWER(album.title) LIKE LOWER(:query)')
+            ->setParameter('query', '%' . trim($query) . '%')
+            ->orderBy('album.title', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return Album[] Returns an array of Album objects
 //     */

@@ -22,15 +22,15 @@ final class MusicCatalogService
     ) {
     }
 
-    public function findOrCreateAlbum(string $artistName, string $albumTitle): Album
+    public function findOrCreateAlbum(string $artistName, string $albumTitle, ?string $fallbackGenre = null): Album
     {
         $artist = $this->findOrCreateArtist($artistName);
         $album = $this->albumRepository->findOneByTitleAndArtist($albumTitle, $artist);
 
         if ($album instanceof Album) {
-            if ($album->getCoverUrl() === '' || $album->getGenre()?->getName() === 'Unknown') {
+            if ($album->getCoverUrl() === '' || $album->getGenre()?->getName() === 'Unknown' || $album->getLabel() === null) {
                 $release = $this->musicBrainzClient->findRelease($albumTitle, $artistName);
-                $this->completeAlbumMetadata($album, $release);
+                $this->completeAlbumMetadata($album, $release, $fallbackGenre);
                 $this->entityManager->flush();
             }
 
@@ -43,8 +43,9 @@ final class MusicCatalogService
         $album->setArtist($artist);
         $album->setReleaseDate($this->parseReleaseDate($release['date'] ?? null));
         $album->setCoverUrl((string) ($release['coverUrl'] ?? ''));
+        $album->setLabel($this->extractLabel($release));
         $album->setCreatedAt(new \DateTimeImmutable());
-        $album->setGenre($this->findOrCreateGenre($this->extractGenre($release)));
+        $album->setGenre($this->findOrCreateGenre($this->extractGenre($release, $fallbackGenre)));
 
         $this->entityManager->persist($album);
 
@@ -66,7 +67,7 @@ final class MusicCatalogService
     /**
      * @param array<string, mixed> $release
      */
-    private function completeAlbumMetadata(Album $album, array $release): void
+    private function completeAlbumMetadata(Album $album, array $release, ?string $fallbackGenre = null): void
     {
         $coverUrl = $release['coverUrl'] ?? null;
         if ($album->getCoverUrl() === '' && is_string($coverUrl)) {
@@ -74,8 +75,22 @@ final class MusicCatalogService
         }
 
         if ($album->getGenre()?->getName() === 'Unknown') {
-            $album->setGenre($this->findOrCreateGenre($this->extractGenre($release)));
+            $album->setGenre($this->findOrCreateGenre($this->extractGenre($release, $fallbackGenre)));
         }
+
+        if ($album->getLabel() === null) {
+            $album->setLabel($this->extractLabel($release));
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $release
+     */
+    private function extractLabel(array $release): ?string
+    {
+        $label = $release['label-info'][0]['label']['name'] ?? null;
+
+        return is_string($label) && trim($label) !== '' ? trim($label) : null;
     }
 
     private function findOrCreateArtist(string $name): Artist
@@ -114,8 +129,12 @@ final class MusicCatalogService
         return $genre;
     }
 
-    private function parseReleaseDate(mixed $date): \DateTimeImmutable
+    private function parseReleaseDate(mixed $date): ?\DateTimeImmutable
     {
+        if ($date === null || $date === '') {
+            return null;
+        }
+
         if (is_string($date)) {
             if (preg_match('/^\d{4}$/', $date) === 1) {
                 return new \DateTimeImmutable($date.'-01-01');
@@ -133,7 +152,7 @@ final class MusicCatalogService
         throw new \RuntimeException('MusicBrainz ne fournit pas de date de sortie exploitable.');
     }
 
-    private function extractGenre(array $release): string
+    private function extractGenre(array $release, ?string $fallbackGenre = null): string
     {
         $genres = [];
         foreach ([$release['genres'] ?? [], $release['release-group']['genres'] ?? [], $release['tags'] ?? []] as $values) {
@@ -152,7 +171,13 @@ final class MusicCatalogService
 
         $genre = $genres[0]['name'] ?? null;
 
-        return is_string($genre) && trim($genre) !== '' ? trim($genre) : 'Unknown';
+        if (is_string($genre) && trim($genre) !== '') {
+            return trim($genre);
+        }
+
+        return is_string($fallbackGenre) && trim($fallbackGenre) !== ''
+            ? trim($fallbackGenre)
+            : 'Unknown';
     }
 
     /**
