@@ -16,11 +16,17 @@
 
             <nav class="public-nav diary-nav" aria-label="Account navigation">
                 <a class="active" href="{{ path('app_diary') }}">Diary</a>
-                <a href="{{ path('app_home') }}">Explore</a>
+                <a href="{{ path('catalog_search') }}">Explore</a>
             </nav>
 
             <div class="account-actions">
-                <span class="diary-user">{{ app.user.username ?: app.user.userIdentifier }}</span>
+                <a class="diary-user nav-account" href="{{ path('app_profile') }}" aria-label="{{ app.user.username ?: app.user.userIdentifier }}">
+                    {% if app.user.avatarUrl %}
+                        <img class="nav-avatar" src="{{ app.user.avatarUrl }}" alt="">
+                    {% else %}
+                        {{ app.user.username ?: app.user.userIdentifier }}
+                    {% endif %}
+                </a>
                 <a class="sign-in" href="{{ logout_path() }}">Log out</a>
             </div>
         </header>

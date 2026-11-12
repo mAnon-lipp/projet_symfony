@@ -16,6 +16,24 @@ class ReviewRepository extends ServiceEntityRepository
         parent::__construct($registry, Review::class);
     }
 
+    /**
+     * @return Review[]
+     */
+    public function findRecentPublic(int $limit = 4): array
+    {
+        return $this->createQueryBuilder('review')
+            ->leftJoin('review.album_id', 'album')
+            ->leftJoin('album.artist', 'artist')
+            ->leftJoin('review.user_id', 'user')
+            ->addSelect('album', 'artist', 'user')
+            ->andWhere('review.deleted_at IS NULL')
+            ->orderBy('review.created_at', 'DESC')
+            ->addOrderBy('review.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return Review[] Returns an array of Review objects
 //     */

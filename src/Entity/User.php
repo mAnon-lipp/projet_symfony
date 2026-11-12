@@ -169,7 +169,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getAvatarUrl(): ?string
     {
-        return $this->avatar_url;
+        if ($this->avatar_url === null || str_starts_with($this->avatar_url, '/')) {
+            return $this->avatar_url;
+        }
+
+        return '/uploads/avatars/'.$this->avatar_url;
     }
 
     public function setAvatarUrl(?string $avatar_url): static

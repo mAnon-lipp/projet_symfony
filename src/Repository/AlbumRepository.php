@@ -97,6 +97,40 @@ class AlbumRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @return Album[]
+     */
+    public function findLatest(int $limit = 1): array
+    {
+        return $this->createQueryBuilder('album')
+            ->leftJoin('album.artist', 'artist')
+            ->leftJoin('album.genre', 'genre')
+            ->addSelect('artist', 'genre')
+            ->orderBy('album.created_at', 'DESC')
+            ->addOrderBy('album.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Album[]
+     */
+    public function findMostReviewed(int $limit = 10): array
+    {
+        return $this->createQueryBuilder('album')
+            ->leftJoin('album.artist', 'artist')
+            ->leftJoin('album.genre', 'genre')
+            ->innerJoin('album.reviews', 'review', 'WITH', 'review.deleted_at IS NULL')
+            ->addSelect('artist', 'genre')
+            ->groupBy('album.id, artist.id, genre.id')
+            ->orderBy('COUNT(review.id)', 'DESC')
+            ->addOrderBy('album.created_at', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return Album[] Returns an array of Album objects
 //     */

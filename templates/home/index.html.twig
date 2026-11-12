@@ -22,13 +22,26 @@
             </form>
 
             <nav class="public-nav" aria-label="Public navigation">
-                <a href="#community">Explore</a>
-                <a href="#popular">Lists</a>
+                <a href={{ path('catalog_search') }}>Explore</a>
+                {% if app.user %}
+                    <a href="{{ path('app_diary') }}">Diary</a>
+                {% endif %}
             </nav>
 
             <div class="account-actions">
-                <a class="sign-in" href="{{ path('app_login') }}">Sign in</a>
-                <a class="sign-up" href="{{ path('app_register') }}">Sign up</a>
+                {% if app.user %}
+                    <a class="diary-user nav-account" href="{{ path('app_diary') }}" aria-label="{{ app.user.username ?: app.user.userIdentifier }}">
+                        {% if app.user.avatarUrl %}
+                            <img class="nav-avatar" src="{{ app.user.avatarUrl }}" alt="">
+                        {% else %}
+                            {{ app.user.username ?: app.user.userIdentifier }}
+                        {% endif %}
+                    </a>
+                    <a class="sign-in" href="{{ logout_path() }}">Log out</a>
+                {% else %}
+                    <a class="sign-in" href="{{ path('app_login') }}">Sign in</a>
+                    <a class="sign-up" href="{{ path('app_register') }}">Sign up</a>
+                {% endif %}
             </div>
         </header>
 
@@ -36,70 +49,84 @@
             <section class="hero" aria-labelledby="featured-title">
                 <div class="hero-image"></div>
                 <div class="hero-overlay"></div>
+                {% if featured_album %}
                 <div class="hero-content">
-                    <img class="featured-cover" src="{{ asset('images/home/hero-cover.jpg') }}" alt="In Rainbows album cover">
+                    {% if featured_album.coverUrl %}<img class="featured-cover" src="{{ featured_album.coverUrl }}" alt="{{ featured_album.title }}">{% else %}<div class="featured-cover album-detail-cover-placeholder" aria-hidden="true">♪</div>{% endif %}
                     <div class="featured-details">
-                        <p class="eyebrow">ALBUM OF THE WEEK <span>·</span> <em>Art Rock · Alternative</em></p>
-                        <h1 id="featured-title">In Rainbows</h1>
-                        <p class="album-meta"><em>Radiohead, 2007</em></p>
-                        <div class="rating" aria-label="4.7 out of 5 stars">
-                            <span>★★★★★</span> <strong>4.7</strong> <small>community avg</small>
-                        </div>
-                        <p class="hero-copy">A masterpiece of restraint and intimacy. Thom Yorke at his most nakedly human, wrapped in the band's most cohesive, warmly produced record. A decade on, it still sounds like nothing else.</p>
+                        <p class="eyebrow">DERNIER ALBUM AJOUTÉ{% if featured_album.genre %} <span>·</span> <em>{{ featured_album.genre.name }}</em>{% endif %}</p>
+                        <h1 id="featured-title">{{ featured_album.title }}</h1>
+                        <p class="album-meta"><em>{{ featured_album.artist.name }}{% if featured_album.releaseDate %}, {{ featured_album.releaseDate|date('Y') }}{% endif %}</em></p>
+                        {% if featured_rating is not null %}<div class="rating" aria-label="{{ featured_rating }} sur 5">
+                            <span>{% for star in 1..5 %}{{ star <= featured_rating|round ? '★' : '☆' }}{% endfor %}</span> <strong>{{ featured_rating }}</strong> <small>{{ featured_review_count }} avis</small>
+                        </div>{% endif %}
+                        {% if app.user %}
+                            <p class="hero-copy">Bonjour {{ app.user.username ?: app.user.userIdentifier }}, retrouvez vos écoutes et continuez à enrichir votre diary.</p>
+                        {% else %}
+                            <p class="hero-copy">Découvrez cet album dans le catalogue et partagez votre propre écoute avec la communauté.</p>
+                        {% endif %}
                         <div class="hero-actions">
-                            <a class="primary-button" href="{{ path('app_login') }}">Sign in to log</a>
-                            <a class="secondary-button" href="#community">Read reviews</a>
+                            {% if app.user %}
+                                <a class="primary-button" href="{{ path('app_diary') }}">Ouvrir mon diary</a>
+                            {% else %}
+                                <a class="primary-button" href="{{ path('app_login') }}">Se connecter pour noter</a>
+                            {% endif %}
+                            <a class="secondary-button" href="{{ path('catalog_album_detail', {id: featured_album.id}) }}">Voir l'album</a>
                         </div>
-                        <p class="helper-copy">New to trackd? <a href="{{ path('app_register') }}">Sign up</a> to rate and review.</p>
+                        {% if not app.user %}<p class="helper-copy">Nouveau sur trackd ? <a href="{{ path('app_register') }}">Créer un compte</a> pour noter et donner votre avis.</p>{% endif %}
                     </div>
                 </div>
+                {% else %}
+                <div class="hero-content hero-empty"><div class="featured-details"><p class="eyebrow">TRACKD</p><h1 id="featured-title">Votre musique, au même endroit.</h1><p class="hero-copy">Le catalogue est encore vide. {% if app.user %}Ajoutez votre premier album depuis votre diary.{% else %}Connectez-vous pour ajouter votre premier album.{% endif %}</p><a class="primary-button" href="{{ app.user ? path('app_diary') : path('app_login') }}">{{ app.user ? 'Ouvrir mon diary' : 'Se connecter' }}</a></div></div>
+                {% endif %}
             </section>
 
             <section class="content-section community-section" id="community">
                 <div class="section-heading">
                     <div>
-                        <h2>Recent Community Lists</h2>
-                        <p>What people are playing right now</p>
+                        <h2>Derniers avis de la communauté</h2>
+                        <p>Les dernières écoutes partagées</p>
                     </div>
                     <div class="section-controls" aria-hidden="true"><button>←</button><button>→</button><span>See all →</span></div>
                 </div>
                 <div class="community-grid">
-                    {% for list in community_lists %}
+                    {% for review in community_reviews %}
                         <article class="community-card">
-                            <img class="community-cover" src="{{ asset('images/home/' ~ list.cover) }}" alt="">
+                            <a href="{{ path('catalog_album_detail', {id: review.albumId.id}) }}">{% if review.albumId.coverUrl %}<img class="community-cover" src="{{ review.albumId.coverUrl }}" alt="{{ review.albumId.title }}">{% else %}<div class="community-cover album-detail-cover-placeholder" aria-hidden="true">♪</div>{% endif %}</a>
                             <div class="community-card-body">
-                                <h3>{{ list.title }}</h3>
-                                <p class="muted">{{ list.artist }}</p>
-                                <div class="reviewer"><img src="{{ asset('images/home/' ~ list.avatar) }}" alt=""><span>{{ list.user }}</span><time>{{ list.time }}</time></div>
-                                <div class="mini-rating" aria-label="{{ list.rating }} out of 5 stars">
+                                <h3>{{ review.albumId.title }}</h3>
+                                <p class="muted">{{ review.albumId.artist.name }}</p>
+                                <div class="reviewer">{% if review.userId.avatarUrl %}<img src="{{ review.userId.avatarUrl }}" alt="">{% else %}<span aria-hidden="true">●</span>{% endif %}<span>{{ review.userId.username }}</span><time>{{ review.createdAt|date('d/m/Y') }}</time></div>
+                                <div class="mini-rating" aria-label="{{ review.rating }} sur 5">
                                     {% for star in 1..5 %}
-                                        {% if star <= list.rating %}★{% else %}<span>☆</span>{% endif %}
+                                        {% if star <= review.rating %}★{% else %}<span>☆</span>{% endif %}
                                     {% endfor %}
                                 </div>
-                                <p class="description">“{{ list.description }}”</p>
+                                {% if review.comment %}<p class="description">“{{ review.comment }}”</p>{% endif %}
                             </div>
                         </article>
                     {% endfor %}
+                    {% if community_reviews is empty %}<div class="diary-empty"><p>Aucun avis pour le moment</p><span>Les avis de la communauté apparaîtront ici.</span></div>{% endif %}
                 </div>
             </section>
 
             <section class="content-section popular-section" id="popular">
                 <div class="section-heading">
                     <div>
-                        <h2>Popular This Month</h2>
-                        <p>Most logged albums among our members</p>
+                        <h2>Albums les plus évalués</h2>
+                        <p>Les albums les plus écoutés par nos membres</p>
                     </div>
-                    <a class="see-all" href="{{ path('app_login') }}">Full chart →</a>
+                    <a class="see-all" href="{{ path('catalog_search') }}">Voir le catalogue →</a>
                 </div>
                 <div class="popular-grid">
                     {% for album in popular_albums %}
                         <article class="popular-card">
                             <div class="rank">{{ loop.index }}</div>
-                            <img src="{{ asset('images/home/' ~ album.cover) }}" alt="{{ album.title }}">
+                            <a href="{{ path('catalog_album_detail', {id: album.id}) }}">{% if album.coverUrl %}<img src="{{ album.coverUrl }}" alt="{{ album.title }}">{% else %}<div class="popular-cover-placeholder album-detail-cover-placeholder" aria-hidden="true">♪</div>{% endif %}</a>
                             <h3>{{ album.title }}</h3>
-                            <p>{{ album.artist }}</p>
+                            <p>{{ album.artist.name }}</p>
                         </article>
                     {% endfor %}
+                    {% if popular_albums is empty %}<div class="diary-empty"><p>Aucun album évalué pour le moment</p><span>Ajoutez une écoute pour alimenter le classement.</span></div>{% endif %}
                 </div>
             </section>
         </main>

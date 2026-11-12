@@ -20,7 +20,10 @@ final class CatalogController extends AbstractController
     public function search(Request $request, AlbumRepository $albumRepository, GenreRepository $genreRepository): Response
     {
         $query = trim((string) $request->query->get('q', ''));
-        $genreId = $request->query->getInt('genre', 0) ?: null;
+        $genreValue = $request->query->all()['genre'] ?? null;
+        $genreId = is_string($genreValue) && ctype_digit($genreValue) && (int) $genreValue > 0
+            ? (int) $genreValue
+            : null;
         $yearValue = trim((string) $request->query->get('year', ''));
         $year = ctype_digit($yearValue) && (int) $yearValue >= 1900 && (int) $yearValue <= 2100
             ? (int) $yearValue

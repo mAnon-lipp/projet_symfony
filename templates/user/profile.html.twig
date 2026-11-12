@@ -1,0 +1,145 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ profile_user.username ?: profile_user.userIdentifier }} — trackd{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="trackd-page">
+        <header class="site-header">
+            <a class="brand" href="{{ path('app_diary') }}" aria-label="trackd diary">
+                <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
+                <span>trackd</span>
+            </a>
+
+            <form class="search-box search-form" action="{{ path('catalog_search') }}" method="get" data-autocomplete-url="{{ path('api_catalog_autocomplete') }}">
+                <img src="{{ asset('images/home/search.svg') }}" alt="">
+                <input name="q" type="search" placeholder="Rechercher albums ou artistes…" aria-label="Rechercher albums ou artistes" autocomplete="off">
+                <kbd>⌘K</kbd>
+                <div class="autocomplete-results" role="listbox"></div>
+            </form>
+
+            <nav class="public-nav diary-nav" aria-label="Account navigation">
+                <a href="{{ path('app_diary') }}">Diary</a>
+                <a href="{{ path('catalog_search') }}">Explore</a>
+            </nav>
+
+            <div class="account-actions">
+                <a class="diary-user nav-account" href="{{ path('app_profile') }}" aria-label="{{ profile_user.username ?: profile_user.userIdentifier }}">
+                    {% if profile_user.avatarUrl %}
+                        <img class="nav-avatar" src="{{ profile_user.avatarUrl }}" alt="">
+                    {% else %}
+                        {{ profile_user.username ?: profile_user.userIdentifier }}
+                    {% endif %}
+                </a>
+                <a class="sign-in" href="{{ logout_path() }}">Log out</a>
+            </div>
+        </header>
+
+        <main class="profile-content">
+            {% for message in app.flashes('success') %}
+                <div class="diary-success" role="status">{{ message }}</div>
+            {% endfor %}
+
+            <section class="profile-header" aria-labelledby="profile-title">
+                {% if profile_user.avatarUrl %}
+                    <img class="profile-avatar" src="{{ profile_user.avatarUrl }}" alt="Avatar de {{ profile_user.username }}">
+                {% else %}
+                    <div class="profile-avatar profile-avatar-placeholder" aria-hidden="true">{{ (profile_user.username ?: profile_user.userIdentifier)|first|upper }}</div>
+                {% endif %}
+                <div class="profile-intro">
+                    <p class="eyebrow">YOUR PROFILE</p>
+                    <h1 id="profile-title">{{ profile_user.username ?: profile_user.userIdentifier }}</h1>
+                    <p>{{ profile_user.bio ?: 'Bienvenue sur trackd.' }}</p>
+                </div>
+            </section>
+
+            <details class="profile-edit" {% if profile_form.vars.submitted and not profile_form.vars.valid %}open{% endif %}>
+                <summary class="profile-edit-trigger" aria-label="Edit profile" title="Edit profile">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                        <path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3Zm11.5-13 1.5-1.5 2 2L17.5 9l-2-2Z"></path>
+                    </svg>
+                </summary>
+                <section class="profile-edit-card" aria-labelledby="edit-profile-title">
+                    <div class="section-heading">
+                        <div>
+                            <h2 id="edit-profile-title">Edit profile</h2>
+                            <p>Update your public profile information.</p>
+                        </div>
+                    </div>
+                    {{ form_start(profile_form, { attr: { class: 'profile-form' } }) }}
+                        {{ form_errors(profile_form) }}
+                        {{ form_row(profile_form.username) }}
+                        {{ form_row(profile_form.bio) }}
+                        {{ form_row(profile_form.avatar) }}
+                        <button class="primary-button" type="submit">Save changes</button>
+                    {{ form_end(profile_form) }}
+                </section>
+            </details>
+
+            <section class="profile-section" aria-labelledby="favorites-title">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="favorites-title">Favorite albums</h2>
+                        <p>Albums you marked as favorites</p>
+                    </div>
+                </div>
+                {% if favorite_entries is empty %}
+                    <div class="diary-empty"><p>No favorite albums yet.</p><span>Mark albums as favorites from your diary.</span></div>
+                {% else %}
+                    <div class="profile-album-grid">
+                        {% for entry in favorite_entries %}
+                            <a class="profile-album-card" href="{{ path('catalog_album_detail', {id: entry.albumId.id}) }}">
+                                {% if entry.albumId.coverUrl %}
+                                    <img src="{{ entry.albumId.coverUrl }}" alt="{{ entry.albumId.title }} cover">
+                                {% else %}
+                                    <div class="profile-album-placeholder" aria-hidden="true">♪</div>
+                                {% endif %}
+                                <strong>{{ entry.albumId.title }}</strong>
+                                <span>{{ entry.albumId.artist.name }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="profile-section" aria-labelledby="recent-title">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="recent-title">Recently listened</h2>
+                        <p>Your four latest albums</p>
+                    </div>
+                </div>
+                {% if recent_entries is empty %}
+                    <div class="diary-empty"><p>No listening history yet.</p><span>Add an album to your diary to see it here.</span></div>
+                {% else %}
+                    <div class="profile-recent-list">
+                        {% for entry in recent_entries %}
+                            <a class="profile-recent-item" href="{{ path('catalog_album_detail', {id: entry.albumId.id}) }}">
+                                {% if entry.albumId.coverUrl %}
+                                    <img src="{{ entry.albumId.coverUrl }}" alt="{{ entry.albumId.title }} cover">
+                                {% else %}
+                                    <div class="profile-recent-placeholder" aria-hidden="true">♪</div>
+                                {% endif %}
+                                <span class="profile-recent-details">
+                                    <strong>{{ entry.albumId.title }}</strong>
+                                    <small>{{ entry.albumId.artist.name }}</small>
+                                    <span class="profile-recent-rating" aria-label="{{ entry.rating }} out of 5 stars">
+                                        {% for star in 1..5 %}<span class="{{ star <= entry.rating ? 'is-filled' : '' }}">★</span>{% endfor %}
+                                        {% if entry.isFavorite %}<em>Favorite</em>{% endif %}
+                                    </span>
+                                    {% if entry.comment %}
+                                        <small class="profile-recent-comment">{{ entry.comment }}</small>
+                                    {% endif %}
+                                </span>
+                                <time datetime="{{ entry.listenedAt|date('Y-m-d') }}">{{ entry.listenedAt|date('d M Y') }}</time>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+{% endblock %}

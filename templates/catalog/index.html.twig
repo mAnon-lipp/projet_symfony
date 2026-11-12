@@ -18,8 +18,25 @@
                 <input name="q" type="search" value="{{ query }}" placeholder="Rechercher un album ou un artiste…" aria-label="Rechercher un album ou un artiste" autocomplete="off">
                 <div class="autocomplete-results" role="listbox"></div>
             </form>
-            <nav class="public-nav" aria-label="Navigation"><a href="{{ path('app_home') }}">Accueil</a></nav>
-            <div class="account-actions"><a class="sign-in" href="{{ path('app_login') }}">Se connecter</a><a class="sign-up" href="{{ path('app_register') }}">S’inscrire</a></div>
+            <nav class="public-nav diary-nav" aria-label="Account navigation">
+                <a href="{{ path('app_diary') }}">Diary</a>
+                <a class="active" href="{{ path('catalog_search') }}">Explore</a>
+            </nav>
+            <div class="account-actions">
+                {% if app.user %}
+                    <a class="diary-user nav-account" href="{{ path('app_profile') }}" aria-label="{{ app.user.username ?: app.user.userIdentifier }}">
+                        {% if app.user.avatarUrl %}
+                            <img class="nav-avatar" src="{{ app.user.avatarUrl }}" alt="">
+                        {% else %}
+                            {{ app.user.username ?: app.user.userIdentifier }}
+                        {% endif %}
+                    </a>
+                    <a class="sign-in" href="{{ logout_path() }}">Se déconnecter</a>
+                {% else %}
+                    <a class="sign-in" href="{{ path('app_login') }}">Se connecter</a>
+                    <a class="sign-up" href="{{ path('app_register') }}">S’inscrire</a>
+                {% endif %}
+            </div>
         </header>
 
         <main class="catalog-content">
