@@ -1,12 +1,12 @@
 # Rapport d'analyse et pistes de simplification
 
-Analyse statique du backend et de son exécution Docker : dépendances, contrôleurs, entités, repositories, services, sécurité, templates de parcours, migrations et configuration. Le dépôt ne contient pas de suite de tests applicatifs visible ; les pistes qui changent le comportement devraient donc être accompagnées de tests avant refactorisation.
+Réanalyse du code présent au commit `8526c84` : contrôleurs, entités, repositories, formulaires, sécurité, services, commande d'import et configurations principales. Le dépôt ne contient toujours pas de répertoire de tests applicatifs visible ; les changements comportementaux devraient donc être accompagnés de tests.
 
 ## Résumé
 
-Le projet est compréhensible et repose sur des conventions Symfony courantes : contrôleurs par fonctionnalité, entités Doctrine, repositories pour les requêtes, formulaires Symfony pour le profil et l'inscription, Twig pour les pages. Le cœur métier est un journal d'écoutes relié à un catalogue musical enrichi à la demande par MusicBrainz.
+Oui, c'est nettement mieux sur les points de code ciblés : le formulaire du journal est maintenant un vrai formulaire Symfony, les écoutes du journal sont paginées, les vues de profil récupèrent des résultats bornés par requête, la moyenne de l'album est calculée en SQL et les deux authentificateurs partagent leur logique commune. Le service de catalogue évite aussi des `flush()` intermédiaires.
 
-Les gains les plus nets sont de réduire les risques de configuration, d'éviter de charger tout l'historique pour quelques lignes, puis de factoriser le formulaire du journal et le code d'authentification. Il n'est pas nécessaire de réécrire l'application en couches supplémentaires.
+La structure reste simple et idiomatique pour Symfony. Les principales réserves restantes concernent surtout les paramètres d'exécution/versionnement et quelques décisions de cohérence métier, pas un besoin de réécrire l'architecture.
 
 ## Points prioritaires
 
@@ -42,19 +42,29 @@ Dans `composer.json`, `easycorp/easyadmin-bundle` est requis avec `*`, alors que
 
 ### Suppression logique des avis
 
-`Review` porte `deleted_at` et certaines requêtes publiques (`findRecentPublic`, `findMostReviewed`) excluent les avis supprimés. La liste du journal et certaines statistiques du tableau d'administration, elles, ne filtrent pas systématiquement ce champ. Décider si les entrées supprimées doivent rester visibles pour leur propriétaire et si les statistiques doivent les compter, puis appliquer une règle cohérente dans les repositories.
+`Review` porte `deleted_at` et certaines requêtes (`findRecentPublic`, `findMostReviewed`, `getRatingSummaryForAlbum`) excluent les avis supprimés. `paginateForUser`, `findRecentForUser` et `findFavoriteAlbumsForUser` ne le font pas ; le tableau d'administration compte aussi toutes les entrées. En outre, la sous-requête qui déduplique les favoris ne filtre pas les favoris supprimés : un avis supprimé plus récent peut donc empêcher l'affichage d'un favori plus ancien. Décider si les entrées supprimées doivent rester visibles pour leur propriétaire et dans les statistiques, puis appliquer la même règle à la requête principale et à sa sous-requête.
 
 `User` possède aussi `deleted_at`, `inactivated_at` et `verified_at`, mais leur présence dans l'entité ne suffit pas à garantir que les comptes correspondants sont exclus de la connexion ou des listes. Clarifier leur usage avant de complexifier la sécurité.
 
 ### Précision des dates MusicBrainz
 
-`MusicCatalogService::parseReleaseDate` accepte une date complète, une année ou année-mois ; les valeurs partielles sont converties respectivement au 1er janvier ou au premier jour du mois. Cela transforme une précision partielle en date complète et peut induire en erreur à l'affichage. Conserver la précision (année/mois/jour) ou afficher une année séparée serait plus juste. Les valeurs absentes ou inconnues doivent rester nulles plutôt que bloquer l'import si l'album peut être créé sans date.
+`MusicCatalogService::parseReleaseDate` accepte une date complète, une année ou année-mois ; les valeurs partielles sont converties respectivement au 1er janvier ou au premier jour du mois. Cela transforme une précision partielle en date complète et peut induire en erreur à l'affichage. Conserver la précision (année/mois/jour) ou afficher une année séparée serait plus juste.
 
-Cela rejoint la note de `check.md` sur les dates de vieux albums : le choix du résultat MusicBrainz et la disponibilité de sa date ne sont pas garantis. Le code actuel peut échouer si la valeur renvoyée n'est pas dans les formats acceptés.
+**Correction par rapport au rapport précédent :** une date absente (`null` ou chaîne vide) est déjà acceptée et enregistrée comme `null`. L'import peut encore échouer si MusicBrainz renvoie une date non vide dans un format inattendu. `MusicBrainzClient::findRelease()` ne demande qu'un seul résultat ; un résultat différent de l'édition recherchée peut expliquer une métadonnée manquante ou imprécise. La note de `check.md` mérite donc d'être vérifiée avec le résultat exact de l'API plutôt que d'être attribuée uniquement au parseur.
+
+### Résolution des artistes et albums externes
+
+`findArtist()` choisit le premier artiste renvoyé quand aucun nom exact n'est trouvé ; `findRelease()` ne récupère que le premier résultat. Pour des noms ambigus ou plusieurs éditions d'un album, cela peut associer le mauvais artiste/album ou une date différente. Avant d'ajouter davantage de logique, afficher ou comparer les résultats candidats (artiste, titre, date, groupe de sorties) et permettre de choisir si le cas existe réellement.
+
+Les contrôles normalisés des noms d'artiste/genre et du couple titre-artiste sont faits en lecture (`LOWER(TRIM(...))`), sans contrainte unique correspondante visible. Deux imports concurrents peuvent donc créer des doublons. Une unicité sur des valeurs normalisées est une amélioration à envisager si plusieurs imports peuvent se produire en parallèle.
 
 ### Création d'utilisateur dans EasyAdmin
 
 Le mot de passe du formulaire admin est facultatif. Lors de la création, `UserCrudController::persistEntity` hache la valeur de `password` même si elle est vide. Rendre ce champ requis à la création ou refuser explicitement un mot de passe absent ; en édition, conserver le comportement qui laisse le hachage inchangé quand le champ est vide.
+
+### Associations et suppression
+
+Plusieurs méthodes `remove...()` des entités mettent à `null` le côté propriétaire (`Review.user_id`, `Review.album_id`, `Track.album`, `Album.artist` ou `Album.genre`) alors que les jointures Doctrine correspondantes sont non nulles. Si ces méthodes sont appelées puis persistées, la base peut refuser la mise à jour. Elles ne sont pas utilisées par les contrôleurs actuels ; décider si retirer un élément signifie supprimer l'entité, interdire le retrait, ou rendre la relation nullable, puis aligner le mapping et le cycle de vie.
 
 ### Complexité de l'exécution
 
@@ -64,18 +74,19 @@ Le `Caddyfile` active Mercure et Vulcain et Compose transporte des variables Mer
 
 ## Ce qui est déjà fait par rapport à `check.md`
 
-- Le journal permet déjà de choisir une note, d'ajouter un commentaire et de marquer un favori.
-- Une route d'édition existe, mais elle modifie seulement la note, le commentaire et le favori ; la date écoutée et l'album ne sont pas modifiables depuis ce formulaire.
-- Le point sur les dates MusicBrainz reste pertinent : le parsing tolère quelques formats et `release_date` est nullable, mais l'import peut encore échouer quand la date est absente ou atypique.
+- Le journal permet de choisir une note, d'ajouter un commentaire et de marquer un favori ; l'ajout et l'édition utilisent maintenant `DiaryEntryType`.
+- La route d'édition modifie la note, le commentaire et le favori ; la date écoutée et l'album ne sont toujours pas modifiables depuis ce formulaire.
+- Une date de sortie absente est maintenant tolérée par le parseur. Le cas restant à vérifier est une date non vide au format inattendu ou le choix d'une mauvaise édition MusicBrainz.
 
 ## Ordre conseillé
 
 1. Renouveler toute valeur sensible déjà versionnée et contrôler les variables réellement utilisées en production.
 2. Retirer phpMyAdmin du Compose de production et décider si Mercure/Vulcain sont nécessaires.
 3. Borner la dépendance EasyAdmin et remplacer les images flottantes.
-4. Ajouter quelques tests fonctionnels du journal et des contrôleurs de sécurité.
-5. Optimiser les autres requêtes non limitées ; les formulaires Symfony et la pagination du journal sont en place.
-6. Simplifier les repositories et factoriser les authentificateurs seulement après que les comportements soient couverts.
+4. Ajouter des tests fonctionnels pour création/édition/pagination du journal et les deux parcours de connexion.
+5. Décider et tester la règle de visibilité des entrées supprimées, y compris les favoris dédupliqués.
+6. Vérifier la sélection MusicBrainz sur les albums ambigus et corriger le mot de passe admin facultatif.
+7. Nettoyer les repositories générés/commentés si souhaité ; aucun autre changement de structure important n'est nécessaire.
 
 ## Documentation Context7 consultée
 
