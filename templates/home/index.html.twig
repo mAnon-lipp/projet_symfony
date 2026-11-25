@@ -17,7 +17,6 @@
             <form class="search-box search-form" action="{{ path('catalog_search') }}" method="get" data-autocomplete-url="{{ path('api_catalog_autocomplete') }}">
                 <img src="{{ asset('images/home/search.svg') }}" alt="">
                 <input name="q" type="search" placeholder="Rechercher albums ou artistes…" aria-label="Rechercher albums ou artistes" autocomplete="off">
-                <kbd>⌘K</kbd>
                 <div class="autocomplete-results" role="listbox"></div>
             </form>
 

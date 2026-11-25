@@ -25,7 +25,9 @@ final class MusicCatalogService
     public function findOrCreateAlbum(string $artistName, string $albumTitle, ?string $fallbackGenre = null): Album
     {
         $artist = $this->findOrCreateArtist($artistName);
-        $album = $this->albumRepository->findOneByTitleAndArtist($albumTitle, $artist);
+        $album = $artist->getId() === null
+            ? null
+            : $this->albumRepository->findOneByTitleAndArtist($albumTitle, $artist);
 
         if ($album instanceof Album) {
             if ($album->getCoverUrl() === '' || $album->getGenre()?->getName() === 'Unknown' || $album->getLabel() === null) {
@@ -110,7 +112,6 @@ final class MusicCatalogService
         $artist->setImageUrl('');
         $artist->setCreatedAt(new \DateTimeImmutable());
         $this->entityManager->persist($artist);
-        $this->entityManager->flush();
 
         return $artist;
     }

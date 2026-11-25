@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Review;
 use App\Entity\User;
 use App\Form\UserProfileFormType;
 use App\Repository\ReviewRepository;
@@ -45,28 +44,11 @@ final class UserController extends AbstractController
             return $this->redirectToRoute('app_profile');
         }
 
-        $entries = $reviewRepository->findBy(
-            ['user_id' => $user],
-            ['listened_at' => 'DESC', 'id' => 'DESC'],
-        );
-
-        $favoriteEntries = [];
-        foreach ($entries as $entry) {
-            if (!$entry instanceof Review || !$entry->isFavorite() || $entry->getAlbumId() === null) {
-                continue;
-            }
-
-            $albumId = $entry->getAlbumId()->getId();
-            if ($albumId !== null && !array_key_exists($albumId, $favoriteEntries)) {
-                $favoriteEntries[$albumId] = $entry;
-            }
-        }
-
         return $this->render('user/profile.html.twig', [
             'profile_user' => $user,
             'profile_form' => $profileForm,
-            'favorite_entries' => array_values($favoriteEntries),
-            'recent_entries' => array_slice($entries, 0, 4),
+            'favorite_entries' => $reviewRepository->findFavoriteAlbumsForUser($user),
+            'recent_entries' => $reviewRepository->findRecentForUser($user),
         ]);
     }
 }

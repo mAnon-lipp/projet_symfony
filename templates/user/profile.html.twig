@@ -9,7 +9,7 @@
 {% block body %}
     <div class="trackd-page">
         <header class="site-header">
-            <a class="brand" href="{{ path('app_diary') }}" aria-label="trackd diary">
+            <a class="brand" href="{{ path('app_home') }}" aria-label="trackd diary">
                 <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
                 <span>trackd</span>
             </a>
@@ -17,7 +17,6 @@
             <form class="search-box search-form" action="{{ path('catalog_search') }}" method="get" data-autocomplete-url="{{ path('api_catalog_autocomplete') }}">
                 <img src="{{ asset('images/home/search.svg') }}" alt="">
                 <input name="q" type="search" placeholder="Rechercher albums ou artistes…" aria-label="Rechercher albums ou artistes" autocomplete="off">
-                <kbd>⌘K</kbd>
                 <div class="autocomplete-results" role="listbox"></div>
             </form>
 

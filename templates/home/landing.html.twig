@@ -1,0 +1,127 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}trackd — Le journal de tes écoutes{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="trackd-page landing-page">
+        <header class="site-header landing-header">
+            <a class="brand" href="{{ path('app_home') }}" aria-label="trackd, accueil">
+                <span class="brand-mark"><img src="{{ asset('images/home/record.svg') }}" alt=""></span>
+                <span>trackd</span>
+            </a>
+            <nav class="public-nav landing-nav" aria-label="Navigation principale">
+                <a href="#concept">Le concept</a>
+                <a href="#community">La communauté</a>
+                <a href="{{ path('catalog_search') }}">Explorer</a>
+            </nav>
+            <div class="account-actions">
+                <a class="sign-in" href="{{ path('app_login') }}">Se connecter</a>
+                <a class="sign-up" href="{{ path('app_register') }}">Créer mon compte</a>
+            </div>
+        </header>
+
+        <main>
+            <section class="landing-hero" aria-labelledby="landing-title">
+                <div class="landing-hero-image" aria-hidden="true"></div>
+                <div class="landing-hero-shade" aria-hidden="true"></div>
+                <div class="landing-hero-content">
+                    <p class="eyebrow">LE JOURNAL DE TES ÉCOUTES</p>
+                    <h1 id="landing-title">Chaque album a une histoire.<br><span>Garde une trace de la tienne.</span></h1>
+                    <p class="landing-intro">Trackd t’aide à garder le fil de tes découvertes musicales : note les albums que tu écoutes, retrouve tes coups de cœur et partage tes avis avec la communauté.</p>
+                    <div class="landing-actions">
+                        <a class="primary-button" href="{{ path('app_register') }}">Créer mon compte</a>
+                        <a class="secondary-button" href="{{ path('catalog_search') }}">Explorer le catalogue</a>
+                    </div>
+                    <p class="landing-note">Ton journal musical, à ta façon.</p>
+                </div>
+                <div class="landing-record" aria-hidden="true">
+                    <img src="{{ asset('images/home/hero-cover.jpg') }}" alt="">
+                    <div class="landing-record-caption">
+                        <span>À chaque écoute, une trace</span>
+                        <span class="landing-record-stars">★★★★★</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="landing-concept" id="concept" aria-labelledby="concept-title">
+                <div class="landing-section-intro">
+                    <p class="eyebrow">ÉCOUTER, NOTER, SE SOUVENIR</p>
+                    <h2 id="concept-title">La musique ne s’écoute pas qu’une fois.</h2>
+                    <p>Un album découvert un soir, un morceau qui accompagne une période, une recommandation qui devient un favori. Avec trackd, tes écoutes ne se perdent plus dans le fil du temps.</p>
+                </div>
+                <div class="landing-feature-grid">
+                    <article class="landing-feature">
+                        <span class="landing-feature-number">01</span>
+                        <h3>Garde ton journal</h3>
+                        <p>Ajoute les albums écoutés et retrouve ton historique au même endroit.</p>
+                    </article>
+                    <article class="landing-feature">
+                        <span class="landing-feature-number">02</span>
+                        <h3>Donne ton avis</h3>
+                        <p>Note tes écoutes, écris ce que tu en as pensé et marque tes favoris.</p>
+                    </article>
+                    <article class="landing-feature">
+                        <span class="landing-feature-number">03</span>
+                        <h3>Découvre ensemble</h3>
+                        <p>Explore le catalogue et laisse-toi inspirer par les albums partagés par la communauté.</p>
+                    </article>
+                </div>
+            </section>
+
+            {% if community_reviews is not empty %}
+                <section class="landing-community" id="community" aria-labelledby="community-title">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">LES ÉCOUTES DE LA COMMUNAUTÉ</p>
+                            <h2 id="community-title">Des albums, des avis, des découvertes.</h2>
+                            <p>Voici quelques écoutes récemment partagées sur trackd.</p>
+                        </div>
+                        <a class="see-all" href="{{ path('catalog_search') }}">Explorer le catalogue →</a>
+                    </div>
+                    <div class="community-grid">
+                        {% for review in community_reviews|slice(0, 4) %}
+                            <article class="community-card">
+                                <a href="{{ path('catalog_album_detail', {id: review.albumId.id}) }}">
+                                    {% if review.albumId.coverUrl %}
+                                        <img class="community-cover" src="{{ review.albumId.coverUrl }}" alt="{{ review.albumId.title }}">
+                                    {% else %}
+                                        <div class="community-cover album-detail-cover-placeholder" aria-hidden="true">♪</div>
+                                    {% endif %}
+                                </a>
+                                <div class="community-card-body">
+                                    <h3>{{ review.albumId.title }}</h3>
+                                    <p class="muted">{{ review.albumId.artist.name }}</p>
+                                    <div class="reviewer">
+                                        {% if review.userId.avatarUrl %}<img src="{{ review.userId.avatarUrl }}" alt="">{% else %}<span aria-hidden="true">●</span>{% endif %}
+                                        <span>{{ review.userId.username }}</span>
+                                        <time>{{ review.createdAt|date('d/m/Y') }}</time>
+                                    </div>
+                                    <div class="mini-rating" aria-label="{{ review.rating }} sur 5">
+                                        {% for star in 1..5 %}{% if star <= review.rating %}★{% else %}<span>☆</span>{% endif %}{% endfor %}
+                                    </div>
+                                    {% if review.comment %}<p class="description">« {{ review.comment }} »</p>{% endif %}
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            <section class="landing-join" aria-labelledby="join-title">
+                <p class="eyebrow">TA PROCHAINE ÉCOUTE T’ATTEND</p>
+                <h2 id="join-title">Et si tu commençais ton journal aujourd’hui ?</h2>
+                <p>Crée ton compte et fais de chaque album une partie de ton histoire musicale.</p>
+                <a class="primary-button" href="{{ path('app_register') }}">Rejoindre trackd</a>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <span class="footer-brand"><img src="{{ asset('images/home/record-alt.svg') }}" alt=""> trackd · powered by MusicBrainz</span>
+            <a href="{{ path('app_login') }}">Déjà membre ? Se connecter</a>
+        </footer>
+    </div>
+{% endblock %}

@@ -2,12 +2,15 @@
 
 namespace App\Controller;
 
+use App\Entity\Album;
 use App\Entity\Review;
 use App\Entity\User;
+use App\Form\DiaryEntryType;
 use App\Repository\ReviewRepository;
 use App\Service\MusicCatalogService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -15,6 +18,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class DiaryController extends AbstractController
 {
+    private const ENTRIES_PER_PAGE = 10;
+
     #[Route('/diary', name: 'app_diary', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_USER')]
     public function index(
@@ -28,49 +33,29 @@ final class DiaryController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $formErrors = [];
-        if ($request->isMethod('POST')) {
-            $payload = $request->getPayload();
-            $artist = trim((string) $payload->get('artist'));
-            $albumTitle = trim((string) $payload->get('album'));
-            $listenedAtValue = trim((string) $payload->get('listened_at'));
-            $ratingValue = trim((string) $payload->get('rating'));
-            $comment = trim((string) $payload->get('comment'));
-            $isFavorite = $payload->get('is_favorite') !== null;
+        $review = (new Review())
+            ->setUserId($user)
+            ->setListenedAt(new \DateTimeImmutable())
+            ->setComment('')
+            ->setIsFavorite(false);
+        $form = $this->createForm(DiaryEntryType::class, $review);
+        $form->handleRequest($request);
 
-            if (!$this->isCsrfTokenValid('diary_entry', (string) $payload->get('_token'))) {
-                $formErrors[] = 'Your session expired. Please try again.';
-            }
-
-            $listenedAt = \DateTimeImmutable::createFromFormat('!Y-m-d', $listenedAtValue);
-            $dateErrors = \DateTimeImmutable::getLastErrors();
-            if ($artist === '' || $albumTitle === '') {
-                $formErrors[] = 'Enter both an artist and an album.';
-            }
-            if ($listenedAt === false || ($dateErrors !== false && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0))) {
-                $formErrors[] = 'Choose a valid listening date.';
-            }
-            if (!in_array($ratingValue, ['1', '2', '3', '4', '5'], true)) {
-                $formErrors[] = 'Choose a rating from 1 to 5 stars.';
+        if ($form->isSubmitted() && $form->isValid()) {
+            $album = null;
+            try {
+                $album = $catalogService->findOrCreateAlbum(
+                    (string) $form->get('artist')->getData(),
+                    (string) $form->get('album')->getData(),
+                );
+            } catch (\RuntimeException $exception) {
+                $form->addError(new FormError($exception->getMessage()));
             }
 
-            if ($formErrors === [] && $listenedAt instanceof \DateTimeImmutable) {
-                try {
-                    $album = $catalogService->findOrCreateAlbum($artist, $albumTitle);
-                } catch (\RuntimeException $exception) {
-                    $formErrors[] = $exception->getMessage();
-                }
-            }
-
-            if ($formErrors === [] && $listenedAt instanceof \DateTimeImmutable) {
-                $review = new Review();
-                $review->setUserId($user);
-                $review->setAlbumId($album);
-                $review->setRating((int) $ratingValue);
-                $review->setComment($comment);
-                $review->setListenedAt($listenedAt);
-                $review->setIsFavorite($isFavorite);
-                $review->setCreatedAt(new \DateTimeImmutable());
+            if ($album instanceof Album) {
+                $review
+                    ->setAlbumId($album)
+                    ->setCreatedAt(new \DateTimeImmutable());
 
                 $entityManager->persist($review);
                 $entityManager->flush();
@@ -81,20 +66,25 @@ final class DiaryController extends AbstractController
             }
         }
 
+        $maxPage = intdiv(PHP_INT_MAX, self::ENTRIES_PER_PAGE) + 1;
+        $page = min($maxPage, max(1, $request->query->getInt('page', 1)));
+        $entries = $reviewRepository->paginateForUser($user, $page, self::ENTRIES_PER_PAGE);
+        $totalEntries = count($entries);
+        $totalPages = max(1, (int) ceil($totalEntries / self::ENTRIES_PER_PAGE));
+
+        if ($page > $totalPages) {
+            return $this->redirectToRoute(
+                'app_diary',
+                $totalPages > 1 ? ['page' => $totalPages] : [],
+            );
+        }
+
         return $this->render('diary/index.html.twig', [
-            'entries' => $reviewRepository->findBy(
-                ['user_id' => $user],
-                ['listened_at' => 'DESC', 'id' => 'DESC'],
-            ),
-            'form_errors' => $formErrors,
-            'form_values' => [
-                'artist' => (string) ($request->getPayload()->get('artist') ?? ''),
-                'album' => (string) ($request->getPayload()->get('album') ?? ''),
-                'listened_at' => (string) ($request->getPayload()->get('listened_at') ?? (new \DateTimeImmutable())->format('Y-m-d')),
-                'rating' => (string) ($request->getPayload()->get('rating') ?? ''),
-                'comment' => (string) ($request->getPayload()->get('comment') ?? ''),
-                'is_favorite' => $request->getPayload()->get('is_favorite') !== null,
-            ],
+            'entries' => $entries,
+            'total_entries' => $totalEntries,
+            'current_page' => $page,
+            'total_pages' => $totalPages,
+            'diary_form' => $form,
         ]);
     }
 
@@ -116,47 +106,21 @@ final class DiaryController extends AbstractController
             throw $this->createNotFoundException('Listening entry not found.');
         }
 
-        $formErrors = [];
-        $ratingValue = (string) $review->getRating();
-        $comment = $review->getComment() ?? '';
-        $isFavorite = $review->isFavorite() ?? false;
+        $form = $this->createForm(DiaryEntryType::class, $review, ['is_edit' => true]);
+        $form->handleRequest($request);
 
-        if ($request->isMethod('POST')) {
-            $payload = $request->getPayload();
-            $ratingValue = trim((string) $payload->get('rating'));
-            $comment = trim((string) $payload->get('comment'));
-            $isFavorite = $payload->get('is_favorite') !== null;
+        if ($form->isSubmitted() && $form->isValid()) {
+            $review->setUpdatedAt(new \DateTimeImmutable());
+            $entityManager->flush();
 
-            if (!$this->isCsrfTokenValid('diary_edit_'.$review->getId(), (string) $payload->get('_token'))) {
-                $formErrors[] = 'Your session expired. Please try again.';
-            }
-            if (!in_array($ratingValue, ['1', '2', '3', '4', '5'], true)) {
-                $formErrors[] = 'Choose a rating from 1 to 5 stars.';
-            }
+            $this->addFlash('success', 'Diary entry updated.');
 
-            if ($formErrors === []) {
-                $review
-                    ->setRating((int) $ratingValue)
-                    ->setComment($comment)
-                    ->setIsFavorite($isFavorite)
-                    ->setUpdatedAt(new \DateTimeImmutable());
-
-                $entityManager->flush();
-
-                $this->addFlash('success', 'Diary entry updated.');
-
-                return $this->redirectToRoute('app_diary');
-            }
+            return $this->redirectToRoute('app_diary');
         }
 
         return $this->render('diary/edit.html.twig', [
             'entry' => $review,
-            'form_errors' => $formErrors,
-            'form_values' => [
-                'rating' => $ratingValue,
-                'comment' => $comment,
-                'is_favorite' => $isFavorite,
-            ],
+            'diary_form' => $form,
         ]);
     }
 }

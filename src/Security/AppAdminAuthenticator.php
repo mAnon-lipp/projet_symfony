@@ -2,59 +2,22 @@
 
 namespace App\Security;
 
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
-use Symfony\Component\Security\Http\Authenticator\AbstractLoginFormAuthenticator;
-use Symfony\Component\Security\Http\Authenticator\Passport\Badge\CsrfTokenBadge;
-use Symfony\Component\Security\Http\Authenticator\Passport\Badge\RememberMeBadge;
-use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
-use Symfony\Component\Security\Http\Authenticator\Passport\Credentials\PasswordCredentials;
-use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
-use Symfony\Component\Security\Http\SecurityRequestAttributes;
-use Symfony\Component\Security\Http\Util\TargetPathTrait;
-
-class AppAdminAuthenticator extends AbstractLoginFormAuthenticator
+class AppAdminAuthenticator extends AbstractAppLoginFormAuthenticator
 {
-    use TargetPathTrait;
-
     public const LOGIN_ROUTE = 'admin_login';
 
-    public function __construct(private UrlGeneratorInterface $urlGenerator)
+    protected function getLoginRoute(): string
     {
+        return self::LOGIN_ROUTE;
     }
 
-    public function authenticate(Request $request): Passport
+    protected function getSuccessRoute(): string
     {
-        $email = $request->getPayload()->getString('email');
-
-        $request->getSession()->set(SecurityRequestAttributes::LAST_USERNAME, $email);
-
-        return new Passport(
-            new UserBadge($email),
-            new PasswordCredentials($request->getPayload()->getString('password')),
-            [
-                new CsrfTokenBadge('authenticate', $request->getPayload()->getString('_csrf_token')),
-                new RememberMeBadge(),
-            ]
-        );
+        return 'admin';
     }
 
-    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
+    protected function shouldRedirectToTargetPath(string $targetPath): bool
     {
-        if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
-            if ($targetPath === '/admin' || str_starts_with($targetPath, '/admin/')) {
-                return new RedirectResponse($targetPath);
-            }
-        }
-
-        return new RedirectResponse($this->urlGenerator->generate('admin'));
-    }
-
-    protected function getLoginUrl(Request $request): string
-    {
-        return $this->urlGenerator->generate(self::LOGIN_ROUTE);
+        return $this->isAdminTargetPath($targetPath);
     }
 }
